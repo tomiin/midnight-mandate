@@ -1,0 +1,16 @@
+{
+  "name": "mandate",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mandate \u2014 privacy-preserving AI agent spending authorization on Midnight. Buildathon Wave 2 submission.",
+  "workspaces": [
+    "contract",
+    "ui",
+    "api"
+  ],
+  "engines": {
+    "node": "22.x"
+  },
+  "license": "Apache-2.0",
+  "author": "tomiin (tminus1sec)"
+}

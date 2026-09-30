@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+/*
+ * Mandate brand tokens — from the Claude Design sheet "Mandate Brand"
+ * (design/Mandate brand mark selection.zip), mapped onto the shadcn
+ * variable names the components already use.
+ *
+ * Two deliberate departures from a stock shadcn theme:
+ *   - `primary` is ink, not a colour. Buttons are solid ink.
+ *   - Red has its own tokens (`seal`, `seal-ink`, `seal-tint`) and is used
+ *     for two things only: the mark, and a CORRECT refusal. A correct
+ *     refusal is the product working, so it gets the loudest colour on the
+ *     page. A real error gets no red at all — it's told apart by a dashed
+ *     frame, so it can never be mistaken for a refusal. That's why
+ *     `destructive` is ink below.
+ */
+
+@theme inline {
+  --font-sans: "Archivo", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-seal: var(--seal);
+  --color-seal-ink: var(--seal-ink);
+  --color-seal-tint: var(--seal-tint);
+
+  /* Square corners throughout; the mark is the only round thing. */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+}
+
+:root {
+  --background: #f3f2f2;
+  --foreground: #201e1d;
+  --card: #eae9e9;
+  --card-foreground: #201e1d;
+  --popover: #f3f2f2;
+  --popover-foreground: #201e1d;
+  --primary: #201e1d;
+  --primary-foreground: #f3f2f2;
+  --secondary: #eae9e9;
+  --secondary-foreground: #201e1d;
+  --muted: #eae9e9;
+  --muted-foreground: #605d5d;
+  --accent: #d7d3d3;
+  --accent-foreground: #201e1d;
+  --destructive: #201e1d;
+  --destructive-foreground: #201e1d;
+  --border: #9b9797;
+  --input: #9b9797;
+  --ring: #201e1d;
+  --radius: 0px;
+
+  --seal: #ec3013;
+  --seal-ink: #ae1800;
+  --seal-tint: #fff2ef;
+}
+
+.dark {
+  --background: #171615;
+  --foreground: #f3f2f2;
+  --card: #211f1e;
+  --card-foreground: #f3f2f2;
+  --popover: #171615;
+  --popover-foreground: #f3f2f2;
+  --primary: #f3f2f2;
+  --primary-foreground: #171615;
+  --secondary: #211f1e;
+  --secondary-foreground: #f3f2f2;
+  --muted: #2d2b2b;
+  --muted-foreground: #bab6b6;
+  --accent: #444141;
+  --accent-foreground: #f3f2f2;
+  --destructive: #f3f2f2;
+  --destructive-foreground: #f3f2f2;
+  --border: #605d5d;
+  --input: #605d5d;
+  --ring: #f3f2f2;
+
+  --seal: #ff563c;
+  --seal-ink: #ff9783;
+  --seal-tint: #4d170e;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}

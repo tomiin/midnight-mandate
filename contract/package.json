@@ -1,0 +1,28 @@
+{
+  "name": "mandate-contract",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mandate \u2014 privacy-preserving AI agent spending authorization in Compact on Midnight",
+  "scripts": {
+    "compile": "mkdir -p src/managed && compact compile +0.31.0 src/mandate.compact src/managed/mandate",
+    "inspect": "mn contract inspect --managed src/managed/mandate",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "engines": {
+    "compactc": "0.31.0"
+  },
+  "dependencies": {
+    "@midnight-ntwrk/compact-runtime": "0.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.0"
+  },
+  "type": "module",
+  "main": "dist/witnesses.js",
+  "types": "dist/witnesses.d.ts",
+  "license": "Apache-2.0",
+  "author": "tomiin (tminus1sec)"
+}

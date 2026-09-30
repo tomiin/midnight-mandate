@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Secrets — policy/.env holds the Lumera wallet mnemonic.
+# Never commit these. policy/.gitignore also covers this; belt and braces.
+.env
+.env.*
+!.env.example
+
+# ZK assets copied into the UI at build time by `copy-contract-keys`.
+# The source of truth is contract/src/managed/, which IS committed so that
+# CI can regenerate these without needing the Compact compiler.
+ui/public/keys/
+ui/public/zkir/
+
+# Stray artifact downloaded while debugging the proof server
+/registerAgent.prover
+
+# macOS
+.DS_Store
+
+# Vercel
+.vercel/
+
+# Local-only working notes and scratch (not for the public repo)
+BUILD-LOG.md
+docs/TARGET-MARKET.md
+design/
+ui/probe.json
+policy/verify-buildtree.tmp.mjs

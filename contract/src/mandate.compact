@@ -1,0 +1,276 @@
+pragma language_version >= 0.23;
+
+import CompactStandardLibrary;
+
+// =============================================================================
+// Mandate — privacy-preserving spending authorization for AI agents
+// -----------------------------------------------------------------------------
+// Delegating a task to an AI agent today means one of three bad options: give
+// it a standing credential (unlimited blast radius if compromised), require
+// approval on every action (defeats the point of delegating), or let whatever
+// it transacts with keep a record of everything it did on your behalf.
+//
+// This contract gets the enforcement without the record, adapted directly from
+// midnight-rxlimit's proven mechanism (github.com/tomiin/midnight-rxlimit):
+// a Merkle-committed grant, a caller-bound proof of membership, and a
+// nullifier for replay protection.
+//
+// TWO DELIBERATE DIFFERENCES FROM RXLIMIT (see README.md for the reasoning):
+//   1. The grant is durable, not single-use. An agent draws against its budget
+//      repeatedly until the period cap is hit. Replay protection instead
+//      applies per REQUEST, not per grant.
+//   2. Revocation is checked at spend time (`exercise`), not just at grant
+//      time — a compromised agent must be cuttable off immediately.
+//
+// WHAT EACH PARTY SEES
+//   principal    writes a grant; learns nothing new about individual spends
+//   agent        holds one secret key; never registers its real identity
+//   counterparty learns "valid, within budget", plus whatever the public
+//                ledger shows anyone; not who the principal is
+//   the chain    sees the agent's pseudonym on every spend, each category's
+//                cap, the running total and each amount, as plain values
+//
+// HONEST LIMITS (argued in full in the README)
+//   * exercise() discloses the agent's pseudonym (agentId) on every call, via
+//     the live revocation check, so all of one agent's spends are linkable to
+//     each other, across categories, periods and deployments. Not to the
+//     agent's real identity.
+//   * The category, its cap, the running total and each amount are public.
+//   * A compromised agent device can still spend within its remaining budget.
+//   * This is authorization-only. It does not move real value — see README.
+//
+// Every hash below carries a domain separator, following RxLimit's own
+// hard-won rule: two values derived from the same secret for different
+// purposes must never collide.
+// =============================================================================
+
+// ---- public ledger state ----------------------------------------------------
+
+// The principal. Set once at deployment, never changeable.
+export sealed ledger principal: Bytes<32>;
+
+// agent id -> currently authorized to exist at all?
+// Checked at EVERY exercise() call, not just at grant time — the kill switch.
+export ledger agents: Map<Bytes<32>, Boolean>;
+
+// Commitments to every (agent, category) grant ever issued. Historic, so a
+// proof built before later grants were added stays valid. Durable — not
+// consumed on use, unlike RxLimit's per-prescription leaves.
+export ledger authorized: HistoricMerkleTree<10, Bytes<32>>;
+
+// Nullifiers of individual purchase/action REQUESTS already processed. This
+// is what stops the same specific request being double-processed, while
+// leaving the underlying grant itself reusable.
+export ledger spentRequests: Map<Bytes<32>, Boolean>;
+
+// The current budget period. Every quota resets when this advances.
+export ledger period: Uint<64>;
+
+// quota key -> cumulative amount spent against it this period.
+export ledger spend: Map<Bytes<32>, Uint<64>>;
+
+// category -> maximum spend allowed per agent per period.
+export ledger categoryLimit: Map<Uint<16>, Uint<64>>;
+
+// Public counters. Aggregate only; they identify nobody.
+export ledger grantsIssued: Counter;
+export ledger exercisedCount: Counter;
+
+// ---- private witnesses ------------------------------------------------------
+
+// The caller's secret key. Runs on their own device; never reaches the chain.
+witness localSecretKey(): Bytes<32>;
+
+// A unique id for the specific request currently being exercised — generated
+// fresh per purchase attempt, out of band, the same way a prescription serial
+// arrives from a prescriber in RxLimit.
+witness requestId(): Bytes<32>;
+
+// The Merkle path proving this agent's grant is in `authorized`.
+witness grantPath(leaf: Bytes<32>): MerkleTreePath<10, Bytes<32>>;
+
+// ---- domain-separated derivations -------------------------------------------
+
+// An agent's stable pseudonymous id. Exported so a principal's app can compute
+// the id it is about to grant, off-chain.
+export pure circuit agentId(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "mandate:agent:v1"), sk]);
+}
+
+// An actor id (the principal), in the ACTOR domain — deliberately different
+// from agentId so a principal's id and an agent's id derived from the same
+// key are unlinkable.
+export pure circuit actorId(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "mandate:actor:v1"), sk]);
+}
+
+// The actor id of whoever is calling right now.
+circuit callerId(): Bytes<32> {
+  return actorId(localSecretKey());
+}
+
+// The commitment published when a grant is issued. Binds the agent and the
+// category together, so neither can be swapped later.
+export pure circuit grantLeaf(agent: Bytes<32>, category: Uint<16>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([
+    pad(32, "mandate:grant:v1"),
+    agent,
+    category as Bytes<32>
+  ]);
+}
+
+// Spend marker for one specific request. Reproducible only by the agent who
+// holds the key, and only for that request id.
+circuit requestNullifier(sk: Bytes<32>, rid: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "mandate:request:v1"), sk, rid]);
+}
+
+// The bucket a spend is counted against. Changes every period. On its own
+// that would separate periods, but exercise() also discloses agentId, so an
+// agent's history is still linkable across periods (see HONEST LIMITS).
+circuit quotaKey(sk: Bytes<32>, category: Uint<16>, p: Uint<64>): Bytes<32> {
+  return persistentHash<Vector<4, Bytes<32>>>([
+    pad(32, "mandate:quota:v1"),
+    sk,
+    category as Bytes<32>,
+    p as Bytes<32>
+  ]);
+}
+
+// ---- read helpers -----------------------------------------------------------
+
+// True iff `id` is a currently active agent. Short-circuits so lookup is only
+// reached when the key exists.
+export circuit isAgent(id: Bytes<32>): Boolean {
+  return agents.member(disclose(id)) && agents.lookup(disclose(id));
+}
+
+// Max spend per period for a category. Zero means the category is not
+// configured, and nothing may be granted or exercised against it.
+circuit limitFor(category: Uint<16>): Uint<64> {
+  if (!categoryLimit.member(disclose(category))) {
+    return 0;
+  }
+  return categoryLimit.lookup(disclose(category));
+}
+
+// Amount already spent against a quota key this period.
+circuit spentFor(key: Bytes<32>): Uint<64> {
+  if (!spend.member(disclose(key))) {
+    return 0;
+  }
+  return spend.lookup(disclose(key));
+}
+
+// ---- access guard -----------------------------------------------------------
+
+circuit assertPrincipal(): [] {
+  assert(callerId() == principal, "Mandate: caller is not the principal");
+}
+
+// ---- constructor ------------------------------------------------------------
+
+// Whoever deploys becomes the principal. Periods start at 1.
+constructor() {
+  principal = disclose(callerId());
+  period = 1;
+}
+
+// ---- agent registry (principal only) ----------------------------------------
+
+export circuit registerAgent(agent: Bytes<32>): [] {
+  assertPrincipal();
+  agents.insert(disclose(agent), true);
+}
+
+// Revoked agents are locked out immediately — checked live in exercise(),
+// not just here. This is the deliberate difference from RxLimit's
+// revokePrescriber, which only blocks future issuance.
+export circuit revokeAgent(agent: Bytes<32>): [] {
+  assertPrincipal();
+  agents.insert(disclose(agent), false);
+}
+
+// Set the per-period budget ceiling for a category. Must be non-zero before
+// that category can be used at all.
+export circuit setCategoryLimit(category: Uint<16>, maxSpend: Uint<64>): [] {
+  assertPrincipal();
+  categoryLimit.insert(disclose(category), disclose(maxSpend));
+}
+
+// Roll the period forward. Every agent's spend resets and every quota key
+// changes. (The agent's pseudonym does not change; see HONEST LIMITS.)
+export circuit advancePeriod(): [] {
+  assertPrincipal();
+  period = (period + 1) as Uint<64>;
+}
+
+// ---- issuing a grant (principal only) ---------------------------------------
+
+// Publishes a commitment binding agent + category. Nothing about the agent's
+// real-world identity is revealed; `agent` is already a one-way hash of its
+// key. The agent must already be registered.
+export circuit issueAuthorization(agent: Bytes<32>, category: Uint<16>): [] {
+  assertPrincipal();
+  assert(isAgent(agent), "Mandate: agent is not registered");
+  assert(limitFor(category) > 0, "Mandate: category not configured");
+
+  const leaf = grantLeaf(agent, category);
+  authorized.insert(disclose(leaf));
+  grantsIssued.increment(1);
+}
+
+// ---- exercising a grant (any counterparty) ----------------------------------
+
+// The agent proves, in a single proof, revealing none of it:
+//   1. it genuinely holds a grant issued by the principal
+//   2. that grant was issued to it specifically
+//   3. it is still an active, non-revoked agent right now
+//   4. this specific request has not been processed before
+//   5. its cumulative spend this period, plus this amount, is within budget
+//
+// The counterparty learns that it passed; the amount, running total and
+// agent pseudonym are disclosed to the public ledger.
+export circuit exercise(category: Uint<16>, amount: Uint<64>): [] {
+  const sk = localSecretKey();
+  const agent = agentId(sk);
+
+  // 3. Checked live, every call — the kill switch.
+  assert(isAgent(agent), "Mandate: agent is not currently authorized");
+
+  // 1 + 2. Membership in `authorized` proves both, but only because of the
+  // two asserts below together.
+  //
+  // As in RxLimit: the witness runs on the caller's machine, so the path it
+  // returns is attacker-controlled, and merkleTreePathRoot hashes the path's
+  // OWN leaf rather than the `leaf` derived above. Without binding them, a
+  // caller could hand back any genuinely-issued agent's path and exercise a
+  // grant that was never issued to it. See merkle-leaf-binding-probe for the
+  // proof this matters.
+  const leaf = grantLeaf(agent, category);
+  const path = grantPath(leaf);
+  assert(path.leaf == leaf, "Mandate: path does not match this agent's grant");
+  assert(
+    authorized.checkRoot(disclose(merkleTreePathRoot<10, Bytes<32>>(path))),
+    "Mandate: no such authorization"
+  );
+
+  // 4. Replay protection for this specific request. The grant itself is not
+  // consumed — only this request id is.
+  const rid = requestId();
+  const nf = requestNullifier(sk, rid);
+  assert(!spentRequests.member(disclose(nf)), "Mandate: request already processed");
+
+  // 5. Per-period budget for this category.
+  const cap = limitFor(category);
+  assert(cap > 0, "Mandate: category not configured");
+  const key = quotaKey(sk, category, period);
+  const used = spentFor(key);
+  const total = (used + disclose(amount)) as Uint<64>;
+  assert(total <= cap, "Mandate: category budget exceeded for this period");
+
+  // Record. The request is spent everywhere, and the running total is bumped.
+  spentRequests.insert(disclose(nf), true);
+  spend.insert(disclose(key), disclose(total));
+  exercisedCount.increment(1);
+}

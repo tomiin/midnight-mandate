@@ -1,0 +1,29 @@
+{
+  "name": "mandate-policy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cascade-backed backup of the principal's authorization policy (agents, categories, caps) for Mandate",
+  "scripts": {
+    "generate-wallet": "tsx src/generate-wallet.ts",
+    "upload-policy": "tsx src/upload-policy.ts",
+    "download-policy": "NODE_OPTIONS=--experimental-eventsource tsx src/download-policy.ts",
+    "postinstall": "node scripts/patch-sdk.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lumera-protocol/sdk-js": "^0.3.0",
+    "@cosmjs/proto-signing": "^0.36.0",
+    "@cosmjs/stargate": "^0.36.0",
+    "dotenv": "^16.4.5",
+    "@cosmjs/amino": "^0.36.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.3",
+    "@types/node": "^22.15.29",
+    "vitest": "^3.2.0"
+  },
+  "license": "Apache-2.0",
+  "author": "tomiin (tminus1sec)"
+}

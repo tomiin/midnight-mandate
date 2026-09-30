@@ -1,0 +1,20 @@
+# Never upload dependencies or build output — Vercel installs and builds.
+node_modules
+dist
+.vercel
+
+# SECRETS. policy/.env holds the Lumera wallet mnemonic.
+# The policy package is a standalone Node script set, is not a workspace
+# member, and is not needed to build the UI — exclude the whole thing.
+policy
+.env
+.env.*
+
+# Generated during the build by `copy-contract-keys` from
+# contract/src/managed/, which IS uploaded.
+ui/public/keys
+ui/public/zkir
+
+# Junk
+.DS_Store
+registerAgent.prover
