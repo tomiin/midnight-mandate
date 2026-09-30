@@ -154,7 +154,14 @@ export function Walkthrough() {
     }
     try {
       const saved = localStorage.getItem(`mandate_steps_${contractAddress}`);
-      setResults(saved ? (JSON.parse(saved) as Record<string, StepResult>) : {});
+      const parsed = saved ? (JSON.parse(saved) as Record<string, StepResult>) : {};
+      // A step can't still be proving after a reload: the work died with the
+      // old page. Drop any saved "running" so the step shows Run again
+      // instead of a spinner that never ends.
+      for (const [id, r] of Object.entries(parsed)) {
+        if (r.state === "running") delete parsed[id];
+      }
+      setResults(parsed);
     } catch {
       setResults({});
     }

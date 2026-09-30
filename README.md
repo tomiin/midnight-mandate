@@ -12,6 +12,8 @@ at all, so the refusal happens on its own machine and nothing is submitted.
 **Try it without a wallet:** [tomiin.github.io/midnight-mandate](https://tomiin.github.io/midnight-mandate/)
 replays the real Preprod run, refusals included.
 
+**Demo video (2 min, captions, recorded live on Preprod):** [youtu.be/tt_2N3Ekv6U](https://youtu.be/tt_2N3Ekv6U)
+
 **Deck:** [docs/deck/Mandate-Wave2-deck.pdf](docs/deck/Mandate-Wave2-deck.pdf)
 
 ![Steps 5 and 7 refused: over budget, and agent fired](docs/screenshots/02-refusals-dark.png)
@@ -42,6 +44,12 @@ the public ledger; they just aren't tied to anyone. See
 | 7. Fired agent books $1 | **refused**: `agent is not currently authorized` |
 
 "Times exercised" reads 1, not 3: the two refusals never reached the chain.
+
+**Recorded run, Sep 30, 2026** (this is the one in the demo video): contract
+`49ef1c9bec0a0e5e8ab6214184842ea15b6d68c50b6654d12e7ebedfc19d55b9`, same 7 steps,
+same result: both refusals for their own reasons, and the ledger again reads
+1 grant · 1 time exercised · period 1 · 0 active agents (1 revoked). Cascade
+backup for this agent: action `88139`.
 
 The first deployment, `cb02871d…528fab10` (deploy tx
 `0x9de449e5…0a5bdb49`, block 2,551,824), is still on Preprod; the run above
