@@ -12,6 +12,10 @@ at all, so the refusal happens on its own machine and nothing is submitted.
 **Try it without a wallet:** [tomiin.github.io/midnight-mandate](https://tomiin.github.io/midnight-mandate/)
 replays the real Preprod run, refusals included.
 
+**Deck:** [docs/deck/Mandate-Wave2-deck.pdf](docs/deck/Mandate-Wave2-deck.pdf)
+
+![Steps 5 and 7 refused: over budget, and agent fired](docs/screenshots/02-refusals-dark.png)
+
 **Not hidden:** the cap, running totals and spend amounts are plain numbers on
 the public ledger; they just aren't tied to anyone. See
 [Honest limits](#honest-limits).
