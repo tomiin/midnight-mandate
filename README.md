@@ -9,6 +9,9 @@ budget, without revealing who it works for or what the budget is for. An
 agent that goes over its cap, or has been revoked, can't build a valid proof
 at all, so the refusal happens on its own machine and nothing is submitted.
 
+**Try it without a wallet:** [tomiin.github.io/midnight-mandate](https://tomiin.github.io/midnight-mandate/)
+replays the real Preprod run, refusals included.
+
 **Not hidden:** the cap, running totals and spend amounts are plain numbers on
 the public ledger; they just aren't tied to anyone. See
 [Honest limits](#honest-limits).

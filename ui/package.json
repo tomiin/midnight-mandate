@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "copy-contract-keys": "rm -rf public/keys public/zkir && mkdir -p public/keys public/zkir && cp -r ../contract/src/managed/mandate/keys/* public/keys/ && cp -r ../contract/src/managed/mandate/zkir/* public/zkir/"
+    "copy-contract-keys": "rm -rf public/keys public/zkir && mkdir -p public/keys public/zkir && cp -r ../contract/src/managed/mandate/keys/* public/keys/ && cp -r ../contract/src/managed/mandate/zkir/* public/zkir/",
+    "build:demo": "vite build -c vite.demo.config.ts && cp dist-demo/demo.html dist-demo/index.html"
   },
   "dependencies": {
     "mandate-api": "*",
