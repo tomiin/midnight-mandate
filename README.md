@@ -1,8 +1,8 @@
 # Mandate
 
 A privacy-preserving spending authorization for AI agents, written in Compact
-on the Midnight Network. Built for Midnight's Buildathon (Akindo), targeting
-Wave 2, Sep 27 - Oct 17 2026.
+on the Midnight Network. Built for Midnight's Buildathon (Akindo): Wave 2
+(Sep 27 - Oct 17 2026) and Wave 3 (Oct 27 - Nov 16 2026).
 
 Mandate lets an AI agent prove it's authorized to spend, and within its
 budget, without revealing who it works for or what the budget is for. An
@@ -21,6 +21,25 @@ replays the real Preprod run, refusals included.
 **Not hidden:** the cap, running totals and spend amounts are plain numbers on
 the public ledger; they just aren't tied to anyone. See
 [Honest limits](#honest-limits).
+
+## Wave 3: an AI agent that actually pays
+
+**New this wave:** Mandate now runs end to end with a real AI agent. You type a request ("flights to Lisbon Dec 12 for the Smith family"), the agent searches several travel providers, books, and pays with a Mandate proof. Over-budget or revoked payments are refused by the contract, live, and every payment is bound to exactly one order.
+
+What changed since Wave 2:
+
+- **Order-bound payments (contract upgrade).** `exercise(category, amount, orderRef)` now records `orderRef → amount` in a new `paidOrders` ledger map and refuses a second payment for the same order. The merchant computes `orderRef = sha256("mandate:order:v1|merchant|orderId")` itself and checks its own order on the public ledger. 21/21 contract tests pass (3 new).
+- **A headless agent** (`agent/`): wallet, proofs from a local proof server, contract calls, and merchant-side verification by reading `paidOrders` from the indexer.
+- **Any AI can use it.** An MCP server for Claude Desktop (`npm run mcp`) and a REST API with an OpenAPI spec (`npm run serve`, `/api/v1/openapi.json`) for ChatGPT actions, OpenAI or Gemini function calling, or your own agent.
+- **Mandate Travel Lite, a travel back office** (simulated providers, clearly labeled): owner sign-in, clients and travellers, trips with budgets, over-budget bookings sent to **Approvals**, invoices per trip or per client-day with who booked and when, a supplier's checkout view, and a public ledger page.
+- **A built-in assistant** (bring your own Claude API key): it searches, books inside a trip and pays with a Mandate proof. Money only moves after a human "yes" in the chat.
+- **Privacy proxy.** Client, traveller and owner names are replaced with placeholders (Client-3F2A, Traveller-8FBF) before anything reaches the AI provider, and swapped back on the agency's machine. **AI view** shows exactly what the AI received. Unknown names are held back; new clients are added through a form, never through the AI.
+- **Encrypted backups on Lumera Cascade.** The agency's records are sealed on its machine (scrypt + AES-256-GCM, passphrase only the owner knows) and stored on Lumera Cascade. Restore from the backup ID and passphrase.
+- **Public verification, no wallet.** Every invoice line has a **Verify** link. `/verify` recomputes the order reference in the browser and reads the Midnight ledger: "Verified: $944 paid for order NA-…". The client checks the agency's spending without the agency opening its books, and the page never shows a name.
+
+Run it: see [docs/WAVE3.md](docs/WAVE3.md). Demo video and deck: linked on the AKINDO submission.
+
+The full **Mandate Travel** edition adds staff accounts with roles and 2-step sign-in, a tamper-evident audit log, AI guardrails and misuse reporting, encrypted travel documents, saved assistant history and client statements. Those modules are not part of this open-source repository.
 
 ## Live on Preprod
 

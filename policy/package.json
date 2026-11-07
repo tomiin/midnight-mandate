@@ -9,7 +9,9 @@
     "upload-policy": "tsx src/upload-policy.ts",
     "download-policy": "NODE_OPTIONS=--experimental-eventsource tsx src/download-policy.ts",
     "postinstall": "node scripts/patch-sdk.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "upload-file": "tsx src/upload-file.ts",
+    "download-file": "NODE_OPTIONS=--experimental-eventsource tsx src/download-file.ts"
   },
   "dependencies": {
     "@lumera-protocol/sdk-js": "^0.3.0",

@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mandate Travel</title>
+<style>
+:root{--bg:#F3F7F7;--card:#FFFFFF;--side:#F7FAFA;--line:#E2EAEA;--line2:#EDF2F2;--text:#0F2E33;--mute:#5F6B6D;--dim:#8A9597;--acc:#0E5E63;--acc-h:#0B4D51;--acc-bg:#E0F2EF;--coral:#E8735A;--coral-bg:#FDECE7;--coral-t:#A3412A;--ok:#0E7A55;--ok-bg:#E3F4EC;--bad:#B42318;--bad-bg:#FDECEC;--warn:#A3412A;--warn-bg:#FDF1E3}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+a{color:var(--acc)}button{font:inherit}
+.top{display:flex;align-items:center;gap:14px;height:58px;padding:0 18px;background:var(--card);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:600;font-size:16px;white-space:nowrap}.brand .mk{width:28px;height:28px;border-radius:8px;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:700}.brand b{color:var(--coral);font-weight:600}
+.ws{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;font-size:13px}.ws a{padding:5px 12px;color:var(--mute);text-decoration:none}.ws a.on{background:var(--acc);color:#fff}
+.search{flex:1;max-width:520px;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:var(--side)}.search input{border:0;background:transparent;outline:0;flex:1;padding:8px 0;font:inherit;color:var(--text)}
+.live{margin-left:auto;font-size:12px;font-weight:500;padding:4px 10px;border-radius:99px;background:var(--acc-bg);color:var(--acc);white-space:nowrap}.live.bad{background:var(--bad-bg);color:var(--bad)}
+.me{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);white-space:nowrap}.av{width:30px;height:30px;border-radius:50%;background:var(--coral-bg);color:var(--coral-t);display:grid;place-items:center;font-weight:600;font-size:12px;flex:none}
+.app{display:grid;grid-template-columns:220px minmax(0,1fr) var(--chatw,390px);height:calc(100vh - 58px)}
+.app.nochat{grid-template-columns:220px minmax(0,1fr) 0}.app.nochat .chat{display:none}
+aside{background:var(--side);border-right:1px solid var(--line);padding:12px 10px;overflow:auto;display:flex;flex-direction:column}
+nav a{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;color:var(--mute);text-decoration:none;font-weight:500}
+nav a .i{width:18px;text-align:center;color:var(--dim)}nav a:hover{background:#EEF4F4;color:var(--text)}
+nav a.on{background:var(--card);color:var(--text);box-shadow:inset 0 0 0 1px var(--line);border-left:3px solid var(--coral);padding-left:7px}nav a.on .i{color:var(--acc)}
+.badge{margin-left:auto;font-size:11px;font-weight:600;min-width:18px;text-align:center;padding:0 6px;border-radius:99px;background:var(--coral-bg);color:var(--coral-t)}
+.sl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:16px 10px 6px}
+.ag{display:flex;align-items:center;gap:9px;padding:5px 10px;color:var(--mute);font-size:13px}.ag .d{width:7px;height:7px;border-radius:50%;margin-left:auto;background:var(--dim)}
+main{overflow:auto;padding:24px 28px 40px;min-width:0}
+.view{display:none}.view.on{display:block}
+h1{font-size:24px;font-weight:600;margin:0 0 2px;letter-spacing:-.2px}.sub{color:var(--mute);margin:0 0 20px}
+h3{font-size:13px;font-weight:600;margin:0 0 10px;color:var(--text)}
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.stat .l{font-size:12px;color:var(--mute)}.stat .v{font-size:24px;font-weight:600;letter-spacing:-.4px;font-variant-numeric:tabular-nums}.stat .s{font-size:12px;color:var(--dim)}
+.bar{height:6px;border-radius:99px;background:var(--line2);overflow:hidden;margin:10px 0 4px}.bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--acc);transition:width .6s}.bar.red i{background:var(--coral)}
+.muted{color:var(--mute);font-size:13px}.dim{color:var(--dim);font-size:12px}
+.btn{font-weight:600;font-size:13px;border:1px solid var(--line);border-radius:9px;padding:7px 13px;cursor:pointer;background:var(--card);color:var(--text)}.btn:hover{border-color:#C9D6D6}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}.btn.pri:hover{background:var(--acc-h)}
+.btn.dan{color:var(--bad);border-color:#F2C9C5}.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+input,select{font:inherit;font-size:13px;border:1px solid var(--line);border-radius:9px;padding:7px 10px;color:var(--text);background:var(--card)}
+.pill{display:inline-block;font-size:12px;font-weight:500;border-radius:99px;padding:2px 9px;white-space:nowrap}
+.p-ok{background:var(--ok-bg);color:var(--ok)}.p-bad{background:var(--bad-bg);color:var(--bad)}.p-wait{background:var(--warn-bg);color:var(--warn)}.p-mute{background:var(--line2);color:var(--mute)}
+table{width:100%;border-collapse:collapse}th{text-align:left;font-weight:500;color:var(--dim);font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}td{padding:10px;border-bottom:1px solid var(--line2);vertical-align:middle}
+tr.click{cursor:pointer}tr.click:hover td{background:#F7FBFB}
+.detail td{background:#F7FBFB;font-size:12.5px;color:var(--mute)}
+.mono{font:12px ui-monospace,Menlo,monospace;color:var(--mute);word-break:break-all}.amt{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.merch{display:flex;gap:9px;align-items:center}.logo{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:none}
+.empty{color:var(--dim);padding:22px 4px;text-align:center}
+.emptybig{text-align:center;padding:48px 20px}.emptybig .ic{width:52px;height:52px;border-radius:14px;margin:0 auto 12px;display:grid;place-items:center;background:var(--acc-bg);color:var(--acc);font-size:22px}
+.it{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line2)}.it .ico{width:34px;height:34px;border-radius:9px;background:var(--side);display:grid;place-items:center;color:var(--acc);flex:none}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.chip{font-size:13px;border:1px solid var(--line);border-radius:99px;padding:5px 12px;cursor:pointer;background:var(--card);color:var(--mute)}.chip.on{border-color:var(--acc);color:var(--acc);background:var(--acc-bg)}
+.feed{max-height:60vh;overflow:auto}.ev{display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.ev .ic{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:11px;background:var(--line2);color:var(--mute)}.ev.ok .ic{background:var(--ok-bg);color:var(--ok)}.ev.bad .ic{background:var(--bad-bg);color:var(--bad)}.ev.proof .ic{background:var(--warn-bg);color:var(--warn)}
+.ev .t{font:11px ui-monospace,Menlo,monospace;color:var(--dim)}
+.prove{display:none;margin:0 0 12px;padding:12px 14px;border-radius:10px;background:var(--warn-bg);border:1px solid #F5D9B8}.prove.on{display:block}
+.merchant{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}.m-head{padding:14px 20px;color:#fff;font-weight:700;font-size:18px;background:#ff6a3d}.m-body{padding:20px}.m-line{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #eee}.m-total{font-size:24px;font-weight:700}
+.m-pay{margin-top:14px;border-radius:12px;padding:14px;background:#f5f6fb;border:1px solid #e5e7f2}.m-pay.ok{background:#eafaf2;border-color:#bfeed5}.m-pay.bad{background:#fff0f2;border-color:#ffd0d6}
+.m-brand-skylark{background:#4b6bff}.m-brand-expedia{background:#1f3c88}.m-brand-priceline{background:#0a6cff}.m-brand-coastal{background:#16a596}.m-brand-staywell{background:#7a4cff}
+.list{padding-left:18px;margin:6px 0}.list li{margin:5px 0}
+.chain{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:500;padding:3px 10px;border-radius:99px}
+.chat{background:var(--card);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;position:relative}
+.chat-resize{position:absolute;left:-5px;top:0;bottom:0;width:10px;cursor:col-resize;z-index:5}.chat-resize:hover,.chat-resize.on{background:linear-gradient(90deg,transparent 4px,var(--acc) 4px,var(--acc) 6px,transparent 6px)}
+body.resizing{cursor:col-resize;user-select:none}
+body.popout .top,body.popout aside,body.popout main,body.popout .chat-resize,body.popout .chat-size,body.popout #b-pop{display:none!important}
+body.popout .app{grid-template-columns:minmax(0,1fr)!important;height:100vh}body.popout .chat{border-left:0}
+.detached-pill{display:none;font-size:12px;padding:5px 10px;border-radius:99px;background:var(--acc-bg);color:var(--acc);cursor:pointer;white-space:nowrap}.app.detached ~ * .detached-pill,body.detached .detached-pill{display:inline-block}body.detached #b-chat{display:none}
+.composer textarea{resize:vertical}
+.msg table.mdt{border-collapse:collapse;font-size:12.5px;margin:4px 0;white-space:normal}.msg table.mdt th,.msg table.mdt td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left}.msg table.mdt th{color:var(--dim);font-weight:500}
+.chat-size{display:flex;gap:2px}.chat-size button{border:1px solid var(--line);background:var(--card);border-radius:6px;font-size:11px;padding:2px 6px;cursor:pointer;color:var(--mute)}
+.chat-h{display:flex;align-items:center;gap:8px;padding:14px 16px 6px}.chat-h b{font-size:15px}.spark{color:var(--coral)}
+.chat-ctx{font-size:12px;color:var(--dim);padding:0 16px 8px;border-bottom:1px solid var(--line2)}
+.msgs{flex:1;overflow:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:92%;line-height:1.5;white-space:pre-wrap;word-wrap:break-word}
+.msg.u{align-self:flex-end;background:var(--acc);color:#fff;padding:9px 12px;border-radius:14px 14px 4px 14px}
+.msg.a{align-self:flex-start;background:var(--side);border:1px solid var(--line);padding:9px 12px;border-radius:14px 14px 14px 4px}
+.msg.ai .real,.msg .aiv{display:none}.msg.ai .aiv{display:block}.msgs.aimode .msg.u,.msgs.aimode .msg.a{background:#1d2a2c;color:#d6f3ee;border-color:#1d2a2c}.aiv-tag{font-size:10px;letter-spacing:.06em;text-transform:uppercase;opacity:.7}
+.privacy{align-self:stretch;background:var(--acc-bg);border:1px solid #BFE3DE;color:var(--text);padding:10px 12px;border-radius:12px;font-size:13px}
+.msg.err{align-self:stretch;background:var(--bad-bg);color:var(--bad);padding:9px 12px;border-radius:12px;font-size:13px}
+.step{align-self:flex-start;display:flex;gap:7px;align-items:center;font-size:12px;color:var(--mute);padding:4px 10px;border-radius:99px;border:1px solid var(--line)}
+.step .s{width:7px;height:7px;border-radius:50%;background:var(--coral);animation:pulse 1s infinite}.step.ok .s{background:var(--ok);animation:none}.step.bad .s{background:var(--bad);animation:none}.step.bad{color:var(--bad)}
+@keyframes pulse{50%{opacity:.3}}
+.offers{align-self:stretch;border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:13px}.offers div{display:flex;justify-content:space-between;gap:8px;padding:7px 10px;border-top:1px solid var(--line2)}.offers div:first-child{border-top:0}.offers .p{font-weight:600}
+.sugg{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 8px}.sugg span{font-size:12px;padding:4px 10px;border-radius:99px;border:1px solid var(--line);color:var(--mute);cursor:pointer}.sugg span:hover{border-color:var(--acc);color:var(--acc)}
+.composer{display:flex;gap:8px;align-items:flex-end;margin:0 12px 12px;padding:8px;border:1px solid var(--line);border-radius:14px;background:var(--side)}
+.composer textarea{flex:1;resize:none;border:0;outline:0;background:transparent;color:var(--text);font:inherit;max-height:140px;min-height:22px;padding:4px}
+.setup{margin:4px 0;padding:12px;border-radius:12px;border:1px dashed #BFD6D6;font-size:13px;color:var(--mute);background:var(--side)}.setup code{font:12px ui-monospace,Menlo,monospace;color:var(--text)}
+code{font:12px ui-monospace,Menlo,monospace}
+@media (max-width:1450px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g2,.g3{grid-template-columns:1fr}}
+@media (max-width:1100px){.app{grid-template-columns:0 minmax(0,1fr) 340px}aside{visibility:hidden;padding:0;border:0}.search{display:none}}
+</style></head><body>
+<div class="top">
+  <div class="brand"><span class="mk">M</span>Mandate <b>Travel</b></div>
+  <div class="ws"><a href="#trips" id="ws-trips" class="on">Trips</a><a href="#events" id="ws-events">Events</a></div>
+  <div class="search"><span class="dim">⌕</span><input id="q" placeholder="Search clients, trips, orders"></div>
+  <span class="live" id="live">Connecting…</span>
+  <button class="btn" id="b-chat">Assistant</button><span class="detached-pill" id="b-dock" title="Bring the assistant back into this window">Assistant in its own window · Bring back</span>
+  <div class="me"><span class="av" id="me-av">·</span><span id="me-name"></span></div>
+</div>
+<div class="app" id="app">
+<aside>
+  <nav id="nav">
+    <a href="#today" data-v="today"><span class="i">☼</span>Today</a>
+    <a href="#trips" data-v="trips"><span class="i">✈</span>Trips</a>
+    <a href="#events" data-v="events"><span class="i">▦</span>Events</a>
+    <a href="#clients" data-v="clients"><span class="i">☺</span>Clients</a>
+    <a href="#approvals" data-v="approvals"><span class="i">✓</span>Approvals<span class="badge" id="appr-n" style="display:none">0</span></a>
+    <a href="#activity" data-v="activity"><span class="i">≡</span>Activity</a>
+    <a href="#invoices" data-v="invoices"><span class="i">▤</span>Invoices</a>
+    <a href="#mandates" data-v="mandates"><span class="i">◈</span>Mandates</a>
+  </nav>
+  <div class="sl">Agents</div>
+  <div id="agents"></div>
+  <div class="sl">Behind the scenes</div>
+  <nav>
+    <a href="#agent" data-v="agent"><span class="i">◆</span>Live agent</a>
+    <a href="#checkout" data-v="checkout"><span class="i">⌂</span>Supplier view</a>
+    <a href="#verify" data-v="verify"><span class="i">⛓</span>Public ledger</a>
+  </nav>
+  <div style="flex:1"></div>
+  <nav><a href="#team" data-v="team"><span class="i">⚿</span>Backups &amp; log</a><a href="#" id="b-logout"><span class="i">⎋</span>Sign out</a></nav>
+</aside>
+<main>
+<section class="view" id="v-today">
+  <h1 id="greet">Good day</h1><p class="sub">Harbor &amp; Co. Travel · here's where things stand.</p>
+  <div class="grid g4">
+    <div class="card stat"><div class="l">Spent today</div><div class="v" id="t-spent">$0</div><div class="s" id="t-paid">0 bookings paid</div></div>
+    <div class="card stat"><div class="l">Mandate left this period</div><div class="v" id="t-left">—</div><div class="bar" id="t-bar"><i></i></div><div class="s" id="t-of">—</div></div>
+    <div class="card stat"><div class="l">Refused by the contract today</div><div class="v" id="t-ref">0</div><div class="s">Nothing charged, no fee spent</div></div>
+    <div class="card stat"><div class="l">Clients served today</div><div class="v" id="t-cl">0</div><div class="s">Names stay off chain</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><div class="row" style="justify-content:space-between"><h3>Recent activity</h3><a href="#activity" class="dim">View all</a></div><table><tbody id="t-recent"></tbody></table></div>
+    <div class="grid" style="align-content:start">
+      <div class="card"><h3>Booking agent</h3><div class="row"><span class="av" style="background:var(--acc-bg);color:var(--acc)">AI</span><div style="flex:1"><div style="font-weight:600">Claude</div><div class="dim">Flights and hotels · paying through Mandate</div></div><span class="pill p-mute" id="t-agent">checking…</span></div></div>
+      <div class="card"><h3>Approvals</h3><div class="muted" id="t-appr">Nothing waiting for you.</div></div>
+    </div>
+  </div>
+</section>
+<section class="view" id="v-trips">
+  <div class="row" style="justify-content:space-between;align-items:flex-start"><div><h1>Trips</h1><p class="sub">One workspace per client trip: travellers, rooms, dates and the budget the client approved.</p></div><button class="btn pri" id="b-newtrip">New trip</button></div>
+  <div class="card" id="trip-form" style="display:none;margin-bottom:14px"><h3>New trip</h3>
+    <div class="grid g3" style="gap:10px">
+      <label class="dim">Client<br><select id="tf-client" style="width:100%"></select></label>
+      <label class="dim">Trip name<br><input id="tf-title" placeholder="Lisbon holiday" style="width:100%"></label>
+      <label class="dim">Destination<br><input id="tf-dest" placeholder="Lisbon" style="width:100%"></label>
+      <label class="dim">Start<br><input id="tf-start" type="date" style="width:100%"></label>
+      <label class="dim">End<br><input id="tf-end" type="date" style="width:100%"></label>
+      <label class="dim">Rooms<br><input id="tf-rooms" type="number" min="1" value="1" style="width:100%"></label>
+      <label class="dim">Budget the client approved ($)<br><input id="tf-budget" type="number" min="0" step="50" placeholder="2400" style="width:100%"></label>
+      <label class="dim" style="align-self:end"><input id="tf-intl" type="checkbox" checked style="width:auto"> International (passports required)</label>
+    </div>
+    <div class="dim" style="margin:12px 0 6px">Travellers</div><div id="tf-travellers" class="row"><span class="dim">Pick a client first.</span></div>
+    <div class="row" style="margin-top:14px"><button class="btn pri" id="tf-save">Create trip</button><button class="btn" id="tf-cancel">Cancel</button><span class="dim" id="tf-msg"></span></div>
+  </div>
+  <div class="chips" id="trip-chips"></div>
+  <div id="trip-body"></div>
+</section>
+<section class="view" id="v-events">
+  <h1>Events</h1><p class="sub">Group travel for meetings, incentives and conferences.</p>
+  <div class="card emptybig"><div class="ic">▦</div><div style="font-weight:600;font-size:16px">Plan your first event</div><p class="muted" style="max-width:460px;margin:6px auto 16px">Add attendees, set a cap per person, and let the agent book everyone's flight and room. Each booking is paid with a mandate proof, and anyone over their cap is refused.</p><span class="pill p-wait">Coming in the next update</span></div>
+</section>
+<section class="view" id="v-clients">
+  <div class="row" style="justify-content:space-between;align-items:flex-start"><div><h1>Clients</h1><p class="sub">Client and traveller profiles. Kept only in the agency's private records; travel documents are masked and never shown to the AI.</p></div><button class="btn pri" id="b-newclient">New client</button></div>
+  <div class="card" id="client-form" style="display:none;margin-bottom:14px"><h3>New client</h3>
+    <div class="grid g3" style="gap:10px"><label class="dim">Client or family name<br><input id="cf-name" placeholder="Garcia family" style="width:100%"></label><label class="dim">Email<br><input id="cf-email" placeholder="ana@example.com" style="width:100%"></label><label class="dim">Phone<br><input id="cf-phone" placeholder="+1 555 0100" style="width:100%"></label></div>
+    <label class="dim" style="display:block;margin-top:10px">Notes<br><input id="cf-notes" placeholder="Prefers aisle seats, anniversary trip" style="width:100%"></label>
+    <div class="dim" style="margin:14px 0 6px">Travellers <span class="dim">· name exactly as on their ID. Documents can be added now or later.</span></div>
+    <div id="cf-travellers"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="cf-addtr">Add another traveller</button><span style="flex:1"></span><button class="btn pri" id="cf-save">Save client</button><button class="btn" id="cf-cancel">Cancel</button></div>
+    <div class="dim" id="cf-msg" style="margin-top:8px"></div>
+  </div>
+  <div class="card" style="padding:4px 8px"><table><thead><tr><th>Client</th><th>Travellers</th><th>Profiles</th><th>Trips</th><th style="text-align:right">Paid</th><th></th></tr></thead><tbody id="cl-body"></tbody></table></div>
+</section>
+<section class="view" id="v-client"><a href="#clients" class="dim" style="text-decoration:none">‹ All clients</a><div id="client-body" style="margin-top:10px"></div></section>
+<section class="view" id="v-approvals">
+  <h1>Approvals</h1><p class="sub">Bookings over a trip's budget wait here. The owner decides; the Midnight contract still enforces the agency's overall mandate on payment.</p>
+  <div class="card" style="padding:4px 8px"><table><thead><tr><th>Requested</th><th>Client · trip</th><th>Booking</th><th>Requested by</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody id="appr-body"></tbody></table></div>
+</section>
+<section class="view" id="v-activity">
+  <h1>Activity</h1><p class="sub">Every purchase, by day, client and who asked for it. The chain only holds an order hash and an amount.</p>
+  <div class="row" style="margin-bottom:14px"><input type="date" id="f-date"><select id="f-client"><option value="">All clients</option></select><select id="f-agent"><option value="">Everyone</option></select><select id="f-status"><option value="">All statuses</option><option value="paid">Paid</option><option value="refused">Refused</option><option value="awaiting_payment">Awaiting payment</option><option value="needs_approval">Needs OK</option><option value="rejected">Rejected</option></select></div>
+  <div class="grid g4" style="margin-bottom:14px"><div class="card stat"><div class="l">Spent</div><div class="v" id="k-spent">$0</div></div><div class="card stat"><div class="l">Bookings paid</div><div class="v" id="k-paid">0</div></div><div class="card stat"><div class="l">Refused by contract</div><div class="v" id="k-ref">0</div></div><div class="card stat"><div class="l">Clients served</div><div class="v" id="k-clients">0</div></div></div>
+  <div class="card" style="padding:4px 8px"><table><thead><tr><th>Time</th><th>Client</th><th>Supplier</th><th>Booking</th><th>Requested by</th><th>Status</th><th style="text-align:right">Amount</th></tr></thead><tbody id="tx-body"></tbody></table></div>
+  <p class="dim" style="margin-top:8px">Click a row for its on-chain receipt. Simulated suppliers are not affiliated with the brands named.</p>
+</section>
+<section class="view" id="v-invoices">
+  <h1>Invoices</h1><p class="sub">One invoice per trip, with every booking on it timed and signed. Bookings made outside a trip get one invoice per client per day. The audit report is internal and includes every on-chain receipt.</p>
+  <div class="row" style="margin-bottom:14px"><select id="i-client"><option value="">All clients</option></select><input type="date" id="i-date"><span class="dim">Date filters by booking day</span><span style="flex:1"></span><button class="btn pri" id="b-audit-rep">Daily audit report</button></div>
+  <div class="card" style="padding:4px 8px"><table><thead><tr><th>Invoice</th><th>Client</th><th>For</th><th>Bookings</th><th>Last booked</th><th style="text-align:right">Total</th><th></th></tr></thead><tbody id="inv-body"></tbody></table></div>
+</section>
+<section class="view" id="v-mandates">
+  <h1>Mandates</h1><p class="sub">The spending rules your agents carry. Enforced by the Midnight contract, not by this app.</p>
+  <div class="grid g3">
+    <div class="card stat"><div class="l">Travel budget this period</div><div class="v" id="c-used">$0</div><div class="s" id="c-of">of $— · period —</div><div class="bar" id="c-bar"><i></i></div><div class="s" id="c-left">—</div></div>
+    <div class="card stat"><div class="l">Payments on the ledger</div><div class="v" id="c-pays">—</div><div class="s">Who paid is never recorded on chain.</div></div>
+    <div class="card stat"><div class="l">Refused by the contract</div><div class="v" id="c-ref">0</div><div class="s">Refused before reaching the chain.</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Agent authorization</h3>
+      <div class="row"><span class="av" style="background:var(--acc-bg);color:var(--acc)">AI</span><div style="flex:1"><div style="font-weight:600">Booking agent</div><div class="dim">Claude, any connected AI, and staff using the assistant</div></div><span class="pill p-mute" id="a-status">checking…</span></div>
+      <div class="row owner" style="margin-top:12px"><button class="btn dan" id="b-revoke">Revoke agent</button><button class="btn" id="b-reinstate">Reinstate</button></div>
+      <p class="dim" style="margin-top:10px">Revoking takes effect on chain: the agent's next payment is refused, even though the AI still holds its key.</p></div>
+    <div class="card"><h3>Budget policy</h3>
+      <div class="row owner"><span class="muted">Travel limit per period $</span><input id="i-limit" type="number" min="1" step="1" style="width:110px"><button class="btn pri" id="b-limit">Update</button></div>
+      <div class="row owner" style="margin-top:10px"><button class="btn" id="b-period">Start new budget period</button><span class="dim">resets spend to $0</span></div>
+      <p class="dim" id="c-action" style="margin-top:10px">Each change is a transaction signed by the agency (about 20 seconds) and recorded in the audit log with your name.</p>
+      <p class="dim" id="staff-note" style="display:none">Only the agency owner can change the mandate.</p></div>
+  </div>
+</section>
+<section class="view" id="v-team">
+  <h1>Backups &amp; activity</h1><p class="sub">Encrypted off-site backups of the agency's records, and a log of who did what. Kept on the agency's machine and Lumera Cascade, never on the Midnight chain.</p>
+  <div class="card owner" style="margin-top:14px"><div class="row" style="justify-content:space-between"><h3>Backups on Lumera Cascade</h3><span class="pill p-mute" id="bk-state">checking…</span></div>
+    <div class="dim" style="margin-bottom:10px">Your clients, trips, bookings, owner account and activity log are sealed on this machine with a passphrase only you know, then stored on Lumera's decentralized storage. Lumera only ever holds scrambled data. If this computer or drive is lost, restore everything with the backup ID and your passphrase. Your Claude key and wallet secrets are never included.</div>
+    <div class="dim" style="margin-bottom:6px">1. Choose a passphrase (both buttons use it). 2. Back up to Cascade, or download the same sealed file to this computer.</div>
+    <div class="row"><input id="bk-pass" type="password" placeholder="Backup passphrase (12+ characters)" autocomplete="new-password" style="width:260px"><input id="bk-pass2" type="password" placeholder="Repeat passphrase" autocomplete="new-password" style="width:200px"><button class="btn pri" id="b-bk">Back up to Cascade</button><button class="btn" id="b-bk-dl" title="Save the same encrypted file to this computer">Download encrypted copy to this computer</button></div>
+    <div class="dim" id="bk-msg" style="margin-top:8px"></div>
+    <table style="margin-top:10px"><thead><tr><th>When</th><th>Backup ID (Cascade action)</th><th>By</th><th>Size</th><th>Kept until</th><th></th></tr></thead><tbody id="bk-body"></tbody></table>
+    <details style="margin-top:12px"><summary class="dim" style="cursor:pointer">Restore from a backup</summary>
+      <div class="row" style="margin-top:8px"><input id="rs-id" placeholder="Backup ID, e.g. 88231" style="width:180px"><input id="rs-pass" type="password" placeholder="Backup passphrase" style="width:220px"><input id="rs-confirm" placeholder="Type RESTORE" style="width:130px"><button class="btn dan" id="b-rs">Restore</button></div>
+      <div class="dim" style="margin-top:6px">Your current records are copied aside first. After a restore, quit Claude Desktop and reopen it.</div><div class="dim" id="rs-msg"></div></details>
+  </div>
+  <div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between"><h3>Activity log</h3><span class="dim" id="chain"></span></div>
+    <table><thead><tr><th>When</th><th>Who</th><th>What</th><th>Details</th></tr></thead><tbody id="au-body"></tbody></table></div>
+</section>
+<section class="view" id="v-agent">
+  <h1>Live agent</h1><p class="sub">What the AI agent is doing right now. Works with any AI: this assistant, Claude Desktop, or any agent through the <a href="/api/v1/openapi.json" target="_blank">Mandate API</a>.</p>
+  <div class="grid g2">
+    <div class="card"><h3>Activity</h3><div class="prove" id="prove"><div style="color:var(--warn);font-weight:600" id="prove-t">Generating zero-knowledge proof…</div><div class="bar"><i id="prove-bar"></i></div><div class="dim">Proving the agent is authorized and within budget, without revealing who it works for.</div></div><div class="feed" id="feed"><div class="empty">Waiting for the agent…</div></div></div>
+    <div class="card"><h3>Fares compared</h3><div id="fares"><div class="empty">No searches yet.</div></div></div>
+  </div>
+</section>
+<section class="view" id="v-checkout">
+  <h1>Supplier view</h1><p class="sub">What the airline or hotel sees. It checks the payment against the public ledger before confirming.</p>
+  <div class="chips" id="otabs"></div>
+  <div class="grid g2"><div id="mview"><div class="empty">No orders yet.</div></div>
+    <div class="card"><h3>What the supplier learns</h3><ul class="list"><li>The agent is authorized by a registered principal</li><li>The payment fits that principal's travel budget</li><li>This exact order was paid this exact amount</li><li>The order can't be paid twice</li></ul><h3 style="margin-top:14px">What it never learns</h3><ul class="list"><li>Which agency or client is behind the agent</li><li>Who on the team asked for it</li><li>What else the agent has bought</li></ul></div></div>
+</section>
+<section class="view" id="v-verify">
+  <h1>Public ledger</h1><p class="sub">The public record of this Mandate contract, read straight from the Midnight ledger. Anyone can check it without a wallet.</p>
+  <div class="grid g2">
+    <div class="card"><h3>On the public ledger</h3><table><tbody id="vt"><tr><td class="empty">Loading…</td></tr></tbody></table><div class="row" style="margin-top:12px"><button class="btn" id="b-refresh">Refresh from ledger</button><span class="dim" id="v-at"></span></div></div>
+    <div class="card"><h3>Never on the ledger</h3><ul class="list"><li>The agency's identity (only a hash commitment)</li><li>Client names, staff names, sign-ins</li><li>Agent secret keys</li></ul><h3 style="margin-top:14px">Payments confirmed this session</h3><div id="vpays"><div class="empty">None yet.</div></div></div>
+  </div>
+</section>
+</main>
+<section class="chat"><div class="chat-resize" id="chat-resize" title="Drag to resize. Double-click to reset."></div>
+  <div class="chat-h"><span class="spark">✦</span><b>Assistant</b><span class="dim" id="chat-model" style="margin-left:auto">Claude</span><span class="chat-size" title="Panel width"><button data-w="320" aria-label="Narrow">S</button><button data-w="420" aria-label="Medium">M</button><button data-w="600" aria-label="Wide">L</button></span><label class="dim" title="Show every message exactly as the AI provider received it" style="display:flex;gap:5px;align-items:center;cursor:pointer;white-space:nowrap"><input type="checkbox" id="ai-view" style="width:auto;margin:0">AI view</label><button class="btn" id="b-newchat" style="padding:4px 10px;font-size:12px">New chat</button></div>
+  <div class="chat-ctx" id="chat-ctx"></div>
+  <div class="msgs" id="msgs"></div>
+  <div class="sugg" id="sugg"><span>Flights to Lisbon Dec 12 under $250 for the Smith family</span><span>What did we spend today?</span><span>Check the mandate</span><span>Hotels in Lisbon Dec 12 under $150</span></div>
+  <div class="composer"><textarea id="chat-in" rows="1" placeholder="Ask Mandate to search, book or pay"></textarea><button class="btn pri" id="b-send">Send</button></div>
+</section>
+</div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+// Two-screen mode: the assistant can live in its own window. Both windows talk over a BroadcastChannel
+// (same browser, same machine); the server session is shared, so nothing extra is exposed.
+const POP=new URLSearchParams(location.search).has('assistant');if(POP){document.body.classList.add('popout');document.title='Assistant · Mandate Travel'}
+let remoteCtx=null,popWin=null;const bc=('BroadcastChannel' in window)?new BroadcastChannel('mandate-travel'):null;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>'$'+Number(n||0).toLocaleString();
+const dayOf=ts=>{const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const timeOf=ts=>new Date(ts).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+const COLORS=['#E8735A','#0E5E63','#16a596','#1f3c88','#0a6cff','#7a4cff','#d14d72','#c58a00'];
+const colorOf=m=>COLORS[[...String(m)].reduce((a,c)=>a+c.charCodeAt(0),0)%COLORS.length];
+const clean=m=>String(m||'').replace(' (simulated)','');
+const pillOf=s=>s==='paid'?'p-ok':s==='refused'||s==='rejected'?'p-bad':s==='awaiting_payment'||s==='needs_approval'?'p-wait':'p-mute';
+const label=s=>s==='awaiting_payment'?'Awaiting payment':s==='needs_approval'?'Needs OK':s[0].toUpperCase()+s.slice(1);
+const st={orders:new Map(),budget:{limit:0,period:null},agentActive:null,sel:null,trip:null,openRow:null,me:null,team:[],crm:{clients:[],trips:[]},tripId:null,legacy:null,clientId:null};
+const isOwner=()=>st.me?.role==='owner';
+const all=()=>[...st.orders.values()].filter(o=>o.status!=='cancelled');
+const paidPeriod=()=>all().filter(o=>o.status==='paid'&&(!st.contract||!o.contract||o.contract===st.contract)&&(st.budget.period==null||o.period===st.budget.period));
+const used=()=>paidPeriod().reduce((a,o)=>a+Number(o.amount),0);
+const clients=()=>{const m=new Map();for(const o of all()){const c=o.client||'Unassigned';const r=m.get(c)||{name:c,n:0,ref:0,paid:0,last:0};r.n++;if(o.status==='refused')r.ref++;if(o.status==='paid')r.paid+=Number(o.amount);r.last=Math.max(r.last,o.createdAt);m.set(c,r)}return [...m.values()].sort((a,b)=>b.last-a.last)};
+const who=o=>o.requestedBy||o.agent||'AI agent';
+const vurl=o=>`/verify?c=${encodeURIComponent(o.contract||'')}&m=${encodeURIComponent(o.merchant)}&o=${encodeURIComponent(o.id)}&a=${o.amount}`;
+async function api(path,opt){const r=await fetch(path,opt);if(r.status===401){location.href='/login';throw new Error('Signed out')}const j=await r.json();if(!r.ok||j.error)throw new Error(j.error||('HTTP '+r.status));return j}
+const VIEWS=['today','client','trips','events','clients','approvals','activity','invoices','mandates','team','agent','checkout','verify'];
+const ALIAS={console:'mandates'};
+function curView(){let v=(location.hash||'#today').slice(1).split('/')[0];v=ALIAS[v]||v;return VIEWS.includes(v)?v:'today'}
+function route(){const v=curView();
+  $$('.view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));$$('nav a[data-v]').forEach(a=>a.classList.toggle('on',a.dataset.v===(v==='client'?'clients':v)));
+  $('#ws-trips').classList.toggle('on',v!=='events');$('#ws-events').classList.toggle('on',v==='events');
+  if(v==='verify')loadPublic();if(v==='team'){loadTeam();loadSecurity();loadBackups()}if(v==='client')renderClient();renderAll();showCtx()}
+addEventListener('hashchange',route);
+function setBar(el,pct,red){el.querySelector('i').style.width=Math.min(100,pct)+'%';el.classList.toggle('red',!!red)}
+function renderTop(){const L=st.budget.limit,u=used();const el=$('#live');if(st.agentActive===false){el.className='live bad';el.textContent='Agent revoked'}else if(L){el.className='live';el.textContent=`Mandate live · ${money(Math.max(0,L-u))} left`}}
+function renderAgents(){const ai=`<div class="ag">Claude · AI<span class="d" style="background:${st.agentActive==null?'var(--dim)':st.agentActive?'var(--ok)':'var(--bad)'}"></span></div>`;
+  $('#agents').innerHTML=ai+st.team.map(t=>`<div class="ag">${esc(t.name)} · ${t.role==='owner'?'owner':'staff'}</div>`).join('')}
+function recentRow(o){const m=clean(o.merchant);return `<tr><td class="dim" style="width:70px">${timeOf(o.createdAt)}</td><td><div class="merch"><span class="logo" style="background:${colorOf(m)}">${esc(m.slice(0,2).toUpperCase())}</span><div><div>${esc(o.client||'Unassigned')}</div><div class="dim">${esc(m)} · ${esc(String(o.item).slice(0,48))}</div></div></div></td><td><span class="pill ${pillOf(o.status)}">${label(o.status)}</span></td><td class="amt">${money(o.amount)}</td></tr>`}
+function renderToday(){const h=new Date().getHours();$('#greet').textContent=`Good ${h<12?'morning':h<18?'afternoon':'evening'}${st.me?', '+st.me.name.split(' ')[0]:''}`;
+  const today=all().filter(o=>dayOf(o.createdAt)===dayOf(Date.now())),p=today.filter(o=>o.status==='paid');
+  $('#t-spent').textContent=money(p.reduce((a,o)=>a+Number(o.amount),0));$('#t-paid').textContent=`${p.length} booking${p.length==1?'':'s'} paid`;
+  $('#t-ref').textContent=today.filter(o=>o.status==='refused').length;$('#t-cl').textContent=new Set(p.map(o=>o.client)).size;
+  const L=st.budget.limit,u=used();if(L){$('#t-left').textContent=money(Math.max(0,L-u));$('#t-of').textContent=`${money(u)} of ${money(L)} used · period ${st.budget.period}`;setBar($('#t-bar'),u/L*100,u/L>.9)}
+  const r=all().sort((a,b)=>b.createdAt-a.createdAt).slice(0,6);$('#t-recent').innerHTML=r.map(recentRow).join('')||'<tr><td class="empty">No bookings yet. Ask the assistant to find something.</td></tr>';
+  const a=st.agentActive,el=$('#t-agent');el.className='pill '+(a==null?'p-mute':a?'p-ok':'p-bad');el.textContent=a==null?'checking…':a?'Active':'Revoked'}
+function fill(id,vals){const el=$(id),cur=el.value,first=el.options[0].outerHTML;el.innerHTML=first+[...vals].sort().map(v=>`<option ${v===cur?'selected':''}>${esc(v)}</option>`).join('')}
+function renderActivity(){if(!$('#f-date').value)$('#f-date').value=dayOf(Date.now());const a=all();fill('#f-client',new Set(a.map(o=>o.client||'Unassigned')));fill('#f-agent',new Set(a.map(who)));
+  const d=$('#f-date').value,c=$('#f-client').value,g=$('#f-agent').value,s=$('#f-status').value;
+  const rows=a.filter(o=>dayOf(o.createdAt)===d&&(!c||(o.client||'Unassigned')===c)&&(!g||who(o)===g)&&(!s||o.status===s)).sort((x,y)=>y.createdAt-x.createdAt),p=rows.filter(o=>o.status==='paid');
+  $('#k-spent').textContent=money(p.reduce((x,o)=>x+Number(o.amount),0));$('#k-paid').textContent=p.length;$('#k-ref').textContent=rows.filter(o=>o.status==='refused').length;$('#k-clients').textContent=new Set(p.map(o=>o.client)).size;
+  $('#tx-body').innerHTML=rows.map(o=>{const m=clean(o.merchant);return `<tr class="click" data-id="${esc(o.id)}"><td class="dim">${timeOf(o.createdAt)}</td><td>${esc(o.client||'Unassigned')}</td><td><div class="merch"><span class="logo" style="background:${colorOf(m)}">${esc(m.slice(0,2).toUpperCase())}</span>${esc(m)}</div></td><td>${esc(o.item)}<div class="dim">${esc(o.id)}</div></td><td class="muted">${esc(who(o))}${o.paidBy&&o.paidBy!==who(o)?`<div class="dim">paid by ${esc(o.paidBy)}</div>`:''}</td><td><span class="pill ${pillOf(o.status)}">${label(o.status)}</span></td><td class="amt">${money(o.amount)}</td></tr>`+
+   (st.openRow===o.id?`<tr class="detail"><td colspan="7">${o.status==='paid'?`<b style="color:var(--ok)">On-chain receipt</b> · tx <span class="mono">${esc(o.txId)}</span> · block ${esc(o.blockHeight)}<br>Order reference on the public ledger: <span class="mono">${esc(o.orderRef||'—')}</span> → ${money(o.amount)}<br>${esc(o.verified||'')}${o.contract?` · <a href="${esc(vurl(o))}" target="_blank">Open the public verification page ↗</a>`:''}`:o.status==='refused'?`<b style="color:var(--bad)">Refused by the Mandate contract</b> · ${esc(o.verified)} · nothing was submitted, no fee spent`:'Awaiting payment'}</td></tr>`:'')}).join('')||'<tr><td colspan="7" class="empty">No activity for this filter.</td></tr>';
+  $$('#tx-body tr.click').forEach(r=>r.onclick=()=>{st.openRow=st.openRow===r.dataset.id?null:r.dataset.id;renderActivity()})}
+['#f-date','#f-client','#f-agent','#f-status'].forEach(id=>$(id).addEventListener('change',()=>{renderActivity();showCtx()}));
+function invoiceGroups(){const g=new Map();for(const o of all()){if(o.status!=='paid')continue;const c=o.client||'Unassigned';const k=o.tripId?'T|'+o.tripId:'D|'+c+'|'+dayOf(o.createdAt);
+  const x=g.get(k)||{key:k,client:c,tripId:o.tripId,day:dayOf(o.createdAt),rows:[]};x.rows.push(o);g.set(k,x)}return [...g.values()].map(x=>({...x,total:x.rows.reduce((a,o)=>a+Number(o.amount),0),last:Math.max(...x.rows.map(o=>o.createdAt))})).sort((a,b)=>b.last-a.last)}
+function invUrl(x){return x.tripId?`/invoice/client?client=${encodeURIComponent(x.client)}&trip=${encodeURIComponent(x.tripId)}`:`/invoice/client?client=${encodeURIComponent(x.client)}&date=${x.day}`}
+function renderInvoices(){const d=$('#i-date').value,gs=invoiceGroups();fill('#i-client',new Set(gs.map(x=>x.client)));const c=$('#i-client').value;
+  const rows=gs.filter(x=>(!c||x.client===c)&&(!d||x.rows.some(o=>dayOf(o.createdAt)===d)));
+  $('#inv-body').innerHTML=rows.map((x,i)=>{const t=x.tripId&&st.crm.trips.find(z=>z.id===x.tripId);return `<tr><td class="mono">${x.tripId?'INV-'+esc(x.tripId.replace(/^TR-/,'T')):'INV-'+x.day.replace(/-/g,'')+'-'+esc(x.client.replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase())}</td><td>${esc(x.client)}</td><td>${x.tripId?`<span class="pill p-ok">Trip</span> ${esc(t?.title||x.tripId)}`:`<span class="pill p-mute">Day</span> ${esc(x.day)}`}</td><td>${x.rows.length}</td><td class="dim">${dayOf(x.last)} ${timeOf(x.last)}</td><td class="amt">${money(x.total)}</td><td style="text-align:right"><button class="btn" data-i="${i}">Open</button></td></tr>`}).join('')||'<tr><td colspan="7" class="empty">No paid bookings match.</td></tr>';
+  $$('#inv-body button').forEach(b=>b.onclick=()=>window.open(invUrl(rows[+b.dataset.i])))}
+$('#i-date').addEventListener('change',renderInvoices);$('#i-client').addEventListener('change',renderInvoices);$('#b-audit-rep').onclick=()=>window.open(`/invoice/internal?date=${$('#i-date').value||dayOf(Date.now())}`);
+function renderMandates(){const L=st.budget.limit,u=used();if(L){$('#c-used').textContent=money(u);$('#c-of').textContent=`of ${money(L)} · period ${st.budget.period}`;$('#c-left').textContent=`${money(Math.max(0,L-u))} left`;setBar($('#c-bar'),u/L*100,u/L>.9);if(document.activeElement!==$('#i-limit'))$('#i-limit').value=L}
+  $('#c-ref').textContent=all().filter(o=>o.status==='refused').length;const a=st.agentActive,el=$('#a-status');el.className='pill '+(a==null?'p-mute':a?'p-ok':'p-bad');el.textContent=a==null?'checking…':a?'Active':'Revoked';
+  $$('.owner').forEach(e=>e.style.display=isOwner()?'':'none');$('#staff-note').style.display=isOwner()?'none':'block'}
+async function loadTeam(){
+  if(!isOwner()){$('#au-body').innerHTML='<tr><td colspan="4" class="empty">Only the agency owner can see the access log.</td></tr>';$('#chain').style.display='none';return}
+  try{const a=await api('/api/audit');$('#chain').textContent=`${a.entries.length} recent entries`;
+   $('#au-body').innerHTML=a.entries.map(e=>`<tr><td class="dim" style="white-space:nowrap">${dayOf(e.at)} ${timeOf(e.at)}</td><td>${esc(e.actor)}</td><td><span class="pill ${/fail|refused|disabled/.test(e.action)?'p-bad':/signed|account/.test(e.action)?'p-mute':/mandate/.test(e.action)?'p-wait':'p-ok'}">${esc(e.action)}</span></td><td class="muted">${esc(e.detail||'')}${e.ip?` <span class="dim">· ${esc(e.ip)}</span>`:''}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">No entries yet.</td></tr>'}catch(e){}}
+const ICON={ok:'✓',bad:'✕',proof:'◆',info:'•'};let tick;
+function addLog(ev){const f=$('#feed');if(f.querySelector('.empty'))f.innerHTML='';const k=ev.data.kind||'info';const d=document.createElement('div');d.className='ev '+k;
+  d.innerHTML=`<span class="ic">${ICON[k]||'•'}</span><span>${esc(ev.data.text)}</span><span class="t">${new Date(ev.at).toLocaleTimeString()}</span>`;f.appendChild(d);f.scrollTop=f.scrollHeight;if(/Agency console/.test(ev.data.text))$('#c-action').textContent=ev.data.text}
+function proving(on,lbl){clearInterval(tick);$('#prove').classList.toggle('on',on);const b=$('#prove-bar');b.style.width='0';if(on){$('#prove-t').textContent=lbl||'Generating zero-knowledge proof…';let p=0;tick=setInterval(()=>{p=Math.min(95,p+4.5);b.style.width=p+'%'},1000)}}
+function renderFares(r){const rows=r.fares||[];$('#fares').innerHTML=`<div class="dim" style="margin-bottom:6px">${esc(r.airline||r.provider)} → ${esc(r.to)} · ${esc(r.date)}</div><table><tr><th>Provider</th><th>Option</th><th>Details</th><th style="text-align:right">Price</th></tr>${rows.map(f=>`<tr><td>${esc(clean(f.provider))}</td><td>${esc(f.hotel||((f.carrier?f.carrier+' · ':'')+(f.depart||'')))}</td><td>${f.hotel?esc((f.stars||'')+'★'):(f.stops?'1 stop':'nonstop')+' · '+esc(f.durationH)+'h'}</td><td class="amt">$${esc(f.priceUsd)}</td></tr>`).join('')}</table>`}
+const brand=m=>/skylark/i.test(m)?'skylark':/coastal/i.test(m)?'coastal':/staywell|hotels\.com/i.test(m)?'staywell':/expedia|booking/i.test(m)?'expedia':/priceline|trip\.com/i.test(m)?'priceline':'';
+function renderCheckout(){const list=all().reverse();if(!list.length)return;if(!st.sel||!st.orders.has(st.sel)||st.orders.get(st.sel).status==='cancelled')st.sel=list[0].id;
+  $('#otabs').innerHTML=list.slice(0,12).map(o=>`<span class="chip ${o.id===st.sel?'on':''}" data-id="${esc(o.id)}">${esc(clean(o.merchant))} · ${esc(o.id)}</span>`).join('');$$('#otabs .chip').forEach(c=>c.onclick=()=>{st.sel=c.dataset.id;renderCheckout()});
+  const o=st.orders.get(st.sel),cls=o.status==='paid'?'ok':o.status==='refused'?'bad':'';
+  $('#mview').innerHTML=`<div class="merchant"><div class="m-head m-brand-${brand(o.merchant)}">${esc(clean(o.merchant))}</div><div class="m-body"><div style="color:#666;font-size:13px">Order ${esc(o.id)}</div><div style="font-weight:700;font-size:16px;margin:4px 0 10px">${esc(o.item)}</div>
+   <div class="m-line"><span>Price</span><span>${money(o.amount)}</span></div><div class="m-line"><span>Booked by</span><span>AI agent (Mandate)</span></div><div class="m-line" style="border:0"><span class="m-total">Total</span><span class="m-total">${money(o.amount)}</span></div>
+   <div class="m-pay ${cls}">${o.status==='paid'?`<div style="color:#13985b;font-weight:600">✓ Authorized agent<br>✓ Within travel budget<br>✓ Order ${esc(o.id)} paid ${money(o.amount)} on ledger</div><div style="color:#555;margin-top:4px">◌ Principal: hidden</div><div style="margin-top:8px;font-size:12px;color:#666;word-break:break-all">tx ${esc(o.txId)}${o.blockHeight?` · block ${esc(o.blockHeight)}`:''}</div><div style="margin-top:8px;font-weight:700;color:#13985b">Booking confirmed</div>`
+   :o.status==='refused'?`<div style="color:#d42a45;font-weight:600">✕ Payment refused</div><div style="color:#9b2235">${esc(o.verified)}</div><div style="margin-top:6px;font-size:12px;color:#666">The Mandate contract rejected the proof. Nothing was charged.</div>`:`<div style="font-weight:700">Pay with Mandate</div><div style="color:#666;font-size:13px">Waiting for the agent's proof…</div>`}</div></div></div>`}
+function renderVerifyPays(){const p=all().filter(o=>o.status==='paid');$('#vpays').innerHTML=p.length?`<table>${p.map(o=>`<tr><td>${money(o.amount)}</td><td class="mono">${esc(String(o.txId).slice(0,22))}…</td><td class="dim">block ${esc(o.blockHeight)}</td></tr>`).join('')}</table>`:'<div class="empty">None yet.</div>'}
+const TRAV_FIELDS=[['fullName','Full name as on ID','text'],['dob','Date of birth','date'],['gender','Gender','sel'],['passportNumber','Passport number','text'],['passportExpiry','Passport expiry','date'],['passportCountry','Passport country','text']];
+function travRow(v={}){return `<div class="grid trow" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:8px">${TRAV_FIELDS.map(([k,ph,t])=>t==='sel'?`<select data-k="${k}"><option value="">Gender</option>${['F','M','X'].map(g=>`<option ${v[k]===g?'selected':''}>${g}</option>`).join('')}</select>`:`<input data-k="${k}" ${t==='date'?'type="date" title="'+ph+'"':''} placeholder="${ph}" value="${esc(t==='date'||k==='fullName'?(v[k]||''):'')}" autocomplete="off">`).join('')}</div>`}
+const readRows=sel=>$$(sel+' .trow').map(r=>Object.fromEntries([...r.querySelectorAll('[data-k]')].map(i=>[i.dataset.k,i.value.trim()]))).filter(t=>t.fullName);
+async function loadCrm(){try{const [c,t]=await Promise.all([api('/api/crm/clients'),api('/api/crm/trips')]);st.crm={clients:c,trips:t};renderAll()}catch(e){}}
+const tripSpent=t=>all().filter(o=>o.tripId===t.id&&o.status==='paid').reduce((a,o)=>a+Number(o.amount),0);
+const tripPending=t=>all().filter(o=>o.tripId===t.id&&o.status==='needs_approval');
+function renderTrips(){const trips=st.crm.trips;if(!st.tripId||!trips.some(t=>t.id===st.tripId))st.tripId=trips[0]?.id||null;
+  const legacy=clients().filter(c=>!st.crm.trips.some(t=>t.client===c.name)||all().some(o=>(o.client||'Unassigned')===c.name&&!o.tripId)).map(c=>c.name);
+  $('#trip-chips').innerHTML=trips.map(t=>`<span class="chip ${t.id===st.tripId&&!st.legacy?'on':''}" data-t="${esc(t.id)}">${esc(t.title)}</span>`).join('')+legacy.filter(n=>all().some(o=>(o.client||'Unassigned')===n&&!o.tripId)).map(n=>`<span class="chip ${st.legacy===n?'on':''}" data-l="${esc(n)}" title="Booked before trips existed">${esc(n)} · earlier</span>`).join('');
+  $$('#trip-chips .chip').forEach(c=>c.onclick=()=>{if(c.dataset.t){st.tripId=c.dataset.t;st.legacy=null}else st.legacy=c.dataset.l;renderTrips();showCtx()});
+  if(st.legacy){const os=all().filter(o=>(o.client||'Unassigned')===st.legacy&&!o.tripId).sort((a,b)=>a.createdAt-b.createdAt);
+    $('#trip-body').innerHTML=`<div class="card"><div class="dim">EARLIER BOOKINGS · NO TRIP</div><div style="font-size:20px;font-weight:600;margin-bottom:8px">${esc(st.legacy)}</div>${os.map(itRow).join('')}</div>`;return}
+  const t=trips.find(x=>x.id===st.tripId);
+  if(!t){$('#trip-body').innerHTML=`<div class="card emptybig"><div class="ic">✈</div><div style="font-weight:600;font-size:16px">Open your first trip</div><p class="muted">Pick a client, the travellers, dates and the budget they approved. Or ask the assistant: "New trip to Lisbon Dec 12–16 for the Smith family, budget $2,400".</p><button class="btn pri" onclick="openTripForm()">New trip</button></div>`;return}
+  const os=all().filter(o=>o.tripId===t.id).sort((a,b)=>a.createdAt-b.createdAt),spent=tripSpent(t),pend=tripPending(t),left=t.budget-spent,notReady=t.travellers.filter(x=>x.missing.length);
+  $('#trip-body').innerHTML=`<div class="card"><div class="dim" style="letter-spacing:.05em">TRIP · <a href="#client/${esc(t.clientId)}" style="text-decoration:none">${esc(t.client.toUpperCase())}</a></div>
+   <div class="row" style="align-items:baseline"><div style="font-size:22px;font-weight:600">${esc(t.title)}</div><div class="muted">${esc(t.start)} → ${esc(t.end)} · ${t.nights} night${t.nights>1?'s':''}</div></div>
+   <div class="muted" style="margin-bottom:12px">${t.travellers.length} traveller${t.travellers.length==1?'':'s'} · ${t.rooms} room${t.rooms>1?'s':''} · ${t.international?'international':'domestic'} · ${esc(t.destination)}</div>
+   <div class="grid g4" style="margin-bottom:8px">${[['Trip budget',money(t.budget)],['Paid',money(spent)],[left<0?'Over budget (approved)':'Left on trip',left<0?money(-left):money(left)],['Waiting for approval',pend.length?money(pend.reduce((a,o)=>a+o.amount,0)):'—']].map(([a,b])=>`<div class="card stat" style="background:var(--side)"><div class="l">${a}</div><div class="v">${b}</div></div>`).join('')}</div>
+   <div class="bar ${spent/t.budget>.9?'red':''}"><i style="width:${t.budget?Math.min(100,spent/t.budget*100):0}%"></i></div>
+   <div class="row" style="margin:12px 0">${t.travellers.map(x=>`<span class="pill ${x.missing.length?'p-wait':'p-ok'}" title="${esc(x.missing.join(', '))}">${esc(x.fullName)}${x.missing.length?' · missing '+x.missing.length:' · ready'}</span>`).join('')}</div>
+   ${notReady.length?`<div class="muted" style="background:var(--warn-bg);color:var(--warn);padding:8px 12px;border-radius:9px;margin-bottom:10px">${notReady.length} traveller profile${notReady.length>1?'s are':' is'} incomplete. Tickets can't be issued until they're done. <a href="#client/${esc(t.clientId)}">Complete profiles</a></div>`:''}
+   <h3 style="margin-top:6px">Itinerary</h3>${os.map(itRow).join('')||'<div class="empty">Nothing booked yet. Ask the assistant to search flights or hotels for this trip.</div>'}
+   <div class="row" style="margin-top:16px"><button class="btn" id="tb-inv">Client invoice</button><button class="btn" id="tb-act">Audit trail</button><button class="btn pri" id="tb-ask">Add to this trip</button>${isOwner()?'<span style="flex:1"></span><button class="btn dan" id="tb-del">Delete trip</button>':''}</div></div>`;
+  if($('#tb-del'))$('#tb-del').onclick=async()=>{if(!confirm(`Delete the trip "${t.title}"? Bookings already paid stay in Activity and invoices.`))return;try{await api(`/api/crm/trips/${t.id}/delete`,{method:'POST'});st.tripId=null;await loadCrm()}catch(e){alert(e.message)}};
+  $('#tb-inv').onclick=()=>window.open(`/invoice/client?client=${encodeURIComponent(t.client)}&trip=${encodeURIComponent(t.id)}`);$('#tb-act').onclick=()=>{$('#f-client').value=t.client;location.hash='#activity'};
+  $('#tb-ask').onclick=()=>askAssistant('For this trip: ')}
+function itRow(o){return `<div class="it"><span class="ico">${/★|night|hotel|inn/i.test(o.item)?'⌂':'✈'}</span><div style="flex:1;min-width:0"><div style="font-weight:500">${esc(clean(o.merchant))} · ${esc(o.item)}</div><div class="dim">${esc(o.id)} · ${esc(who(o))}${o.qty>1?` · ${o.qty} × ${money(o.unitPrice)}`:''}${o.approvedBy?` · approved by ${esc(o.approvedBy)}`:''}${o.blockHeight?` · proof in block ${esc(o.blockHeight)}`:''}${o.status==='refused'?' · '+esc(o.verified):''}${o.status==='paid'&&o.contract?` · <a href="${esc(vurl(o))}" target="_blank">Verify on ledger ↗</a>`:''}</div></div><span class="pill ${pillOf(o.status)}">${label(o.status)}</span><span class="amt" style="width:80px">${money(o.amount)}</span></div>`}
+async function openTripForm(clientId){$('#trip-form').style.display='block';$('#tf-msg').textContent='';location.hash='#trips';
+  $('#tf-client').innerHTML='<option value="">Choose a client…</option>'+st.crm.clients.map(c=>`<option value="${c.id}" ${c.id===clientId?'selected':''}>${esc(c.name)}</option>`).join('');await tfTravellers()}
+async function tfTravellers(){const id=$('#tf-client').value;if(!id){$('#tf-travellers').innerHTML='<span class="dim">Pick a client first.</span>';return}
+  const c=await api('/api/crm/clients/'+id);$('#tf-travellers').innerHTML=c.travellers.map(x=>`<label class="chip on" style="cursor:pointer"><input type="checkbox" value="${x.id}" checked style="width:auto;margin-right:6px">${esc(x.fullName)}</label>`).join('')||'<span class="dim">This client has no travellers yet. Add them on the client profile.</span>';
+  $('#tf-rooms').value=Math.max(1,Math.ceil(c.travellers.length/2))}
+$('#tf-client').addEventListener('change',tfTravellers);$('#b-newtrip').onclick=()=>openTripForm();$('#tf-cancel').onclick=()=>$('#trip-form').style.display='none';
+$('#tf-save').onclick=async()=>{$('#tf-msg').textContent='';try{const t=await api('/api/crm/trips',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({clientId:$('#tf-client').value,title:$('#tf-title').value,destination:$('#tf-dest').value,start:$('#tf-start').value,end:$('#tf-end').value,rooms:$('#tf-rooms').value,budget:$('#tf-budget').value,international:$('#tf-intl').checked,travellerIds:$$('#tf-travellers input:checked').map(i=>i.value)})});
+  $('#trip-form').style.display='none';['#tf-title','#tf-dest','#tf-budget'].forEach(i=>$(i).value='');st.tripId=t.id;st.legacy=null;await loadCrm();location.hash='#trips';renderTrips();showCtx()}catch(e){$('#tf-msg').textContent=e.message}};
+function renderClients(){const q=$('#q').value.trim().toLowerCase();const paidBy=n=>all().filter(o=>o.status==='paid'&&o.client===n).reduce((a,o)=>a+Number(o.amount),0);
+  const rows=st.crm.clients.filter(c=>!q||c.name.toLowerCase().includes(q));
+  $('#cl-body').innerHTML=rows.map(c=>`<tr class="click" data-id="${c.id}"><td><div class="merch"><span class="av">${esc(c.name.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase())}</span><div>${esc(c.name)}<div class="dim">${esc(c.email||c.phone||'')}</div></div></div></td><td>${c.travellers}</td><td>${c.incomplete?`<span class="pill p-wait">${c.incomplete} incomplete</span>`:c.travellers?'<span class="pill p-ok">Ready</span>':'<span class="pill p-mute">No travellers</span>'}</td><td>${c.trips}</td><td class="amt">${money(paidBy(c.name))}</td><td style="text-align:right"><span class="dim">Open ›</span></td></tr>`).join('')||`<tr><td colspan="6" class="empty">${q?'No clients match.':'No client profiles yet. Click New client, or ask the assistant to create one.'}</td></tr>`;
+  $$('#cl-body tr.click').forEach(r=>r.onclick=()=>location.hash='#client/'+r.dataset.id)}
+$('#b-newclient').onclick=()=>{$('#client-form').style.display='block';$('#cf-travellers').innerHTML=travRow();$('#cf-msg').textContent=''};
+$('#cf-addtr').onclick=()=>$('#cf-travellers').insertAdjacentHTML('beforeend',travRow());$('#cf-cancel').onclick=()=>$('#client-form').style.display='none';
+$('#cf-save').onclick=async()=>{$('#cf-msg').textContent='';try{const c=await api('/api/crm/clients',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:$('#cf-name').value,email:$('#cf-email').value,phone:$('#cf-phone').value,notes:$('#cf-notes').value,travellers:readRows('#cf-travellers')})});
+  $('#client-form').style.display='none';['#cf-name','#cf-email','#cf-phone','#cf-notes'].forEach(i=>$(i).value='');await loadCrm();location.hash='#client/'+c.id}catch(e){$('#cf-msg').textContent=e.message}};
+async function renderClient(){const id=(location.hash.split('/')[1]||'');if(!id)return;let c;try{c=await api('/api/crm/clients/'+id)}catch(e){$('#client-body').innerHTML=`<div class="empty">${esc(e.message)}</div>`;return}
+  st.clientId=c.id;const paid=all().filter(o=>o.status==='paid'&&o.client===c.name).reduce((a,o)=>a+Number(o.amount),0);
+  $('#client-body').innerHTML=`<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h1>${esc(c.name)}</h1><p class="sub">${esc([c.email,c.phone].filter(Boolean).join(' · ')||'No contact details')} · added by ${esc(c.createdBy)}${c.notes?'<br>'+esc(c.notes):''}</p></div><div class="row">${isOwner()?'<button class="btn dan" id="cl-del">Delete client</button>':''}<button class="btn" id="cl-inv">Invoices</button><button class="btn pri" onclick="openTripForm('${c.id}')">New trip</button></div></div>
+   <div class="grid g3" style="margin-bottom:14px"><div class="card stat"><div class="l">Travellers</div><div class="v">${c.travellers.length}</div></div><div class="card stat"><div class="l">Trips</div><div class="v">${c.trips.length}</div></div><div class="card stat"><div class="l">Paid to date</div><div class="v">${money(paid)}</div></div></div>
+   <div class="card"><div class="row" style="justify-content:space-between"><h3>Travellers</h3><span class="dim">Documents stay on this machine, are masked here, never go to the AI, and are sent only to the supplier at ticketing.</span></div>
+   <table><thead><tr><th>Name as on ID</th><th>Date of birth</th><th>Gender</th><th>Passport</th><th>Expiry</th><th>Status</th><th></th></tr></thead><tbody>${c.travellers.map(t=>`<tr><td>${esc(t.fullName)}</td><td class="mono">${esc(t.dob||'—')}</td><td>${esc(t.gender||'—')}</td><td class="mono">${esc(t.passport||'—')} ${t.passportCountry?`<span class="dim">${esc(t.passportCountry)}</span>`:''}</td><td class="dim">${esc(t.passportExpiry||'—')}</td><td>${t.missing.length?`<span class="pill p-wait" title="${esc(t.missing.join(', '))}">Missing ${t.missing.length}</span>`:'<span class="pill p-ok">Ready</span>'}</td>
+     <td style="text-align:right;white-space:nowrap"><button class="btn" data-edit="${t.id}" data-name="${esc(t.fullName)}">Edit</button>${isOwner()?` <button class="btn dan" data-del="${t.id}" data-name="${esc(t.fullName)}">Remove</button>`:''}</td></tr><tr id="rev-${t.id}" style="display:none"><td colspan="7" class="dim"></td></tr>`).join('')||'<tr><td colspan="7" class="empty">No travellers yet.</td></tr>'}</tbody></table>
+   <div id="tv-form" class="card" style="background:var(--side);margin-top:12px"><h3 id="tv-title">Add a traveller</h3><div id="tv-row">${travRow()}</div><div class="row"><button class="btn pri" id="tv-save">Save traveller</button><button class="btn" id="tv-reset" style="display:none">Cancel edit</button><span class="dim" id="tv-msg"></span></div><div class="dim" style="margin-top:6px">When editing, leave a field empty to keep what's on file. Saving is recorded in the activity log.</div></div></div>
+   <div class="card" style="margin-top:14px"><h3>Trips</h3>${c.trips.map(t=>`<div class="it" style="cursor:pointer" onclick="st.tripId='${t.id}';st.legacy=null;location.hash='#trips'"><span class="ico">✈</span><div style="flex:1"><div style="font-weight:500">${esc(t.title)}</div><div class="dim">${esc(t.start)} → ${esc(t.end)} · ${t.travellers.length} traveller(s) · ${t.rooms} room(s)</div></div><span class="amt">${money(t.budget)}</span></div>`).join('')||'<div class="empty">No trips yet.</div>'}</div>`;
+  let editing=null;
+  $$('#client-body [data-edit]').forEach(b=>b.onclick=()=>{editing=b.dataset.edit;$('#tv-title').textContent='Edit '+b.dataset.name;$('#tv-row').innerHTML=travRow({fullName:b.dataset.name});$('#tv-reset').style.display='';$('#tv-form').scrollIntoView({behavior:'smooth'})});
+  $('#tv-reset').onclick=()=>renderClient();
+  $('#cl-inv').onclick=()=>{$('#i-date').value='';renderInvoices();$('#i-client').value=c.name;location.hash='#invoices';renderInvoices()};
+  $$('#client-body [data-del]').forEach(b=>b.onclick=async()=>{if(!confirm(`Remove ${b.dataset.name}? Their profile and travel documents are erased. This is logged.`))return;try{await api(`/api/crm/travellers/${b.dataset.del}/delete`,{method:'POST'});await loadCrm();renderClient()}catch(e){alert(e.message)}});
+  if($('#cl-del'))$('#cl-del').onclick=async()=>{if(!confirm(`Delete ${c.name}? All traveller profiles, documents and trips are erased. Paid booking records and invoices are kept for accounting. This is logged.`))return;try{await api(`/api/crm/clients/${c.id}/delete`,{method:'POST'});await loadCrm();location.hash='#clients'}catch(e){alert(e.message)}};
+  $('#tv-save').onclick=async()=>{$('#tv-msg').textContent='';const v=readRows('#tv-row')[0]||{};if(editing)v.id=editing;try{await api(`/api/crm/clients/${c.id}/travellers`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(v)});await loadCrm();renderClient()}catch(e){$('#tv-msg').textContent=e.message}}}
+function renderApprovals(){const p=all().filter(o=>o.status==='needs_approval').sort((a,b)=>a.createdAt-b.createdAt);$('#appr-n').textContent=p.length;$('#appr-n').style.display=p.length?'':'none';
+  $('#t-appr').innerHTML=p.length?`<b>${p.length}</b> booking${p.length>1?'s':''} over trip budget. <a href="#approvals">Review</a>`:'Nothing waiting for you.';
+  const tripOf=o=>st.crm.trips.find(t=>t.id===o.tripId);
+  $('#appr-body').innerHTML=p.map(o=>{const t=tripOf(o);return `<tr><td class="dim">${dayOf(o.createdAt)} ${timeOf(o.createdAt)}</td><td>${esc(o.client)}<div class="dim">${esc(t?.title||'')}${t?` · ${money(Math.max(0,t.budget-tripSpent(t)))} left of ${money(t.budget)}`:''}</div></td><td>${esc(clean(o.merchant))} · ${esc(o.item)}<div class="dim">${esc(o.id)}${o.qty>1?` · ${o.qty} × ${money(o.unitPrice)}`:''}</div></td><td class="muted">${esc(who(o))}</td><td class="amt">${money(o.amount)}</td>
+    <td style="text-align:right;white-space:nowrap">${isOwner()?`<button class="btn pri" data-ap="${o.id}" data-pay="1">Approve and pay</button> <button class="btn" data-ap="${o.id}">Approve</button> <button class="btn dan" data-rj="${o.id}">Reject</button>`:'<span class="dim">Waiting for the owner</span>'}</td></tr>`}).join('')||'<tr><td colspan="6" class="empty">Nothing waiting for approval.</td></tr>';
+  $$('#appr-body [data-ap]').forEach(b=>b.onclick=async()=>{$$('#appr-body .btn').forEach(x=>x.disabled=true);b.textContent=b.dataset.pay?'Paying with proof…':'Approving…';try{const r=await api(`/api/orders/${b.dataset.ap}/approve`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pay:!!b.dataset.pay})});if(r.status==='refused')alert('Approved, but the Midnight contract refused the payment: '+r.reason)}catch(e){alert(e.message)}finally{await refreshState();loadPublic()}});
+  $$('#appr-body [data-rj]').forEach(b=>b.onclick=async()=>{if(!confirm('Reject this booking?'))return;try{await api(`/api/orders/${b.dataset.rj}/reject`,{method:'POST'})}catch(e){alert(e.message)}finally{refreshState()}})}
+function loadSecurity(){}
+function secBadge(){}
+async function loadBackups(){if(!isOwner())return;try{const b=await api('/api/backup');const last=b.backups[0];const el=$('#bk-state');
+  el.className='pill '+(!b.wallet?'p-bad':last&&Date.now()-last.at<7*864e5?'p-ok':'p-wait');el.textContent=!b.wallet?'No Lumera wallet':last?`Last backup ${dayOf(last.at)}`:'No backup yet';
+  $('#bk-body').innerHTML=b.backups.map(x=>`<tr><td class="dim">${dayOf(x.at)} ${timeOf(x.at)}</td><td class="mono" style="color:var(--text)">${esc(x.actionId)}</td><td>${esc(x.by)}</td><td class="dim">${(x.bytes/1024).toFixed(1)} KB · ${x.files.length} files</td><td class="dim">${esc(String(x.expires).slice(0,10))}</td><td style="text-align:right"><button class="btn" data-rsid="${esc(x.actionId)}">Restore…</button></td></tr>`).join('')||'<tr><td colspan="6" class="empty">No backups yet.</td></tr>';
+  $$('[data-rsid]').forEach(bt=>bt.onclick=()=>{$('#rs-id').value=bt.dataset.rsid;bt.closest('.card').querySelector('details').open=true;$('#rs-pass').focus()})}catch(e){}}
+$('#b-bk').onclick=async()=>{const p=$('#bk-pass').value;if(p.length<12){needPass('First type a passphrase (12+ characters) in both boxes above.');return}if(p!==$('#bk-pass2').value){needPass("The two passphrases don't match.");return}
+  $('#b-bk').disabled=true;$('#bk-msg').textContent='Sealing your records and uploading to Lumera Cascade (usually under a minute)…';
+  try{const e=await api('/api/backup/cascade',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({passphrase:p})});$('#bk-pass').value=$('#bk-pass2').value='';
+    $('#bk-msg').innerHTML=`<b style="color:var(--ok)">Backed up.</b> Backup ID <b class="mono" style="color:var(--text)">${esc(e.actionId)}</b>. Save this ID and your passphrase in your password manager: you need both to restore.`;loadBackups()}
+  catch(e){$('#bk-msg').textContent='Backup failed: '+e.message}finally{$('#b-bk').disabled=false}};
+const needPass=msg=>{$('#bk-msg').innerHTML='<b style="color:var(--warn)">'+msg+'</b>';const f=$('#bk-pass').value.length<12?$('#bk-pass'):$('#bk-pass2');f.focus();f.style.outline='2px solid var(--coral)';setTimeout(()=>f.style.outline='',2500)};
+$('#b-bk-dl').onclick=async()=>{const p=$('#bk-pass').value;if(p.length<12){needPass('First type a passphrase (12+ characters) in both boxes above. The downloaded file is sealed with it.');return}if(p!==$('#bk-pass2').value){needPass("The two passphrases don't match.");return}
+  try{const sealed=await api('/api/backup/download',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({passphrase:p})});const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(sealed)],{type:'application/json'}));a.download=`mandate-travel-backup-${dayOf(Date.now())}.enc.json`;a.click();$('#bk-msg').textContent='Encrypted copy saved to your Downloads.'}catch(e){$('#bk-msg').textContent=e.message}};
+$('#b-rs').onclick=async()=>{$('#rs-msg').textContent='';if(!confirm('Replace the current records with this backup? Current records are copied aside first.'))return;$('#b-rs').disabled=true;$('#rs-msg').textContent='Downloading from Lumera Cascade and decrypting…';
+  try{const r=await api('/api/backup/restore',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({actionId:$('#rs-id').value.trim(),passphrase:$('#rs-pass').value,confirm:$('#rs-confirm').value.trim()})});
+    document.body.innerHTML=`<div style="padding:48px;font:16px system-ui;color:#0F2E33;max-width:640px"><b>Restore complete.</b><br><br>${r.files.length} record files restored from the backup made ${esc(r.createdAt)}.<br><br>Quit Claude Desktop (Cmd+Q) and reopen it to finish, then sign in again.<br><br><span style="color:#5F6B6D">Your previous records were kept in ${esc(r.snapshot)}.</span></div>`}
+  catch(e){$('#rs-msg').textContent='Restore failed: '+e.message;$('#b-rs').disabled=false}};
+function renderAll(){renderTop();renderAgents();renderToday();renderTrips();renderClients();renderActivity();renderInvoices();renderMandates();renderApprovals();renderCheckout();renderVerifyPays()}
+async function loadPublic(){try{const p=await api('/api/public');st.agentActive=p.agentActive;$('#c-pays').textContent=p.paymentsOnLedger;if(!st.budget.limit)st.budget={limit:p.travelLimit,period:p.period};
+  $('#vt').innerHTML=[['Network',esc(p.network)],['Contract',`<span class="mono">${esc(p.contract)}</span>`],['Travel limit per period',money(p.travelLimit)],['Current period',esc(p.period)],['Payments accepted',esc(p.paymentsOnLedger)],['Agent status',p.agentActive?'authorized':'revoked']].map(([k,v])=>`<tr><td class="muted">${k}</td><td style="text-align:right">${v}</td></tr>`).join('');$('#v-at').textContent='read '+new Date().toLocaleTimeString();renderAll()}
+  catch(e){$('#vt').innerHTML=`<tr><td class="empty">Ledger not reachable yet (${esc(e.message)})</td></tr>`;if(!st.budget.limit){const el=$('#live');el.className='live bad';el.textContent=/wallet|sync|timeout|ECONNREFUSED|fetch/i.test(e.message)?'Syncing with Midnight…':'Ledger not reachable';el.title=e.message;setTimeout(loadPublic,10000)}}}
+async function act(path,body){$$('#v-mandates .btn').forEach(b=>b.disabled=true);$('#c-action').textContent='Signing as the agency and generating a proof (about 20 seconds)…';
+  try{const j=await api('/api'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body||{})});if(j.state){st.agentActive=j.state.agentActive;$('#c-pays').textContent=j.state.paymentsOnLedger;renderAll()}}
+  catch(e){$('#c-action').textContent='Failed: '+e.message}finally{$$('#v-mandates .btn').forEach(b=>b.disabled=false)}}
+$('#b-revoke').onclick=()=>confirm('Revoke the booking agent? Its next payment will be refused on chain.')&&act('/revoke');$('#b-reinstate').onclick=()=>act('/reinstate');$('#b-period').onclick=()=>confirm('Start a new budget period? Spend resets to $0.')&&act('/new-period');
+$('#b-limit').onclick=()=>act('/limit',{amount:$('#i-limit').value});$('#b-refresh').onclick=loadPublic;
+$('#q').addEventListener('input',()=>{if(location.hash!=='#clients')location.hash='#clients';renderClients()});
+$('#b-logout').onclick=async e=>{e.preventDefault();await fetch('/api/auth/logout',{method:'POST'});location.href='/login'};
+async function loadMe(){const rr=await fetch('/api/auth/state');if(!rr.ok){document.body.innerHTML='<div style="padding:48px;font:16px system-ui;color:#0F2E33"><b>Mandate Travel was updated.</b><br>Quit Claude Desktop (Cmd+Q) and reopen it to load the new server, then reload this page.</div>';return}const s=await rr.json();if(!s.user){location.href='/login';return}st.me=s.user;st.team=s.team;
+  $('#me-name').textContent=s.user.name;$('#me-av').textContent=s.user.name.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();renderAll()}
+// ---------- assistant ----------
+const newId=()=>'c'+Date.now()+Math.random().toString(36).slice(2,6);
+let chatId=newId(),chatBusy=false;const keepChat=()=>{};
+const mdTables=h=>h.replace(/((?:^\|.*\|[ \t]*\n?)+)/gm,blk=>{const rows=blk.trim().split('\n').map(l=>l.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim()));if(rows.length<2||!rows[1].every(c=>/^:?-{2,}:?$/.test(c)))return blk;return `<table class="mdt"><tr>${rows[0].map(c=>`<th>${c}</th>`).join('')}</tr>${rows.slice(2).map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`});
+const md=t=>mdTables(esc(t)).replace(/^#{1,4}\s*(.+)$/gm,'<b>$1</b>').replace(/^\s*[-*]\s+/gm,'• ').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
+function ctx(){if(POP&&remoteCtx)return remoteCtx;const v=curView();const t=v==='trips'&&!st.legacy?st.crm.trips.find(x=>x.id===st.tripId):null;const cl=v==='client'?st.crm.clients.find(x=>x.id===st.clientId):null;return {view:v,tripId:t?.id,trip:t?.title,client:t?.client||cl?.name||(v==='activity'?$('#f-client').value:undefined)||undefined,clientId:t?.clientId||cl?.id}}
+function showCtx(){const c=ctx();if(!POP)bc?.postMessage({type:'ctx',ctx:c});$('#chat-ctx').textContent='Context: '+(c.trip?'Trip · '+c.trip:(c.view[0].toUpperCase()+c.view.slice(1))+(c.client?' · '+c.client:''))}
+function bubble(cls,html,aiText){const d=document.createElement('div');d.className=cls+($('#msgs').classList.contains('aimode')&&aiText!=null?' ai':'');d.innerHTML=aiText!=null?`<div class="real">${html}</div><div class="aiv"><div class="aiv-tag">What the AI received</div>${md(aiText)}</div>`:html;$('#msgs').appendChild(d);$('#msgs').scrollTop=$('#msgs').scrollHeight;return d}
+const hideHist=()=>{};
+function welcome(){$('#msgs').innerHTML='';bubble('msg a',md('Hi. I search every connected provider, book for your clients, and pay with a Mandate proof. Anything over the budget is refused by the contract.\n\n🔒 I never see real names: Mandate swaps clients, travellers and staff for placeholders before anything reaches me. Turn on **AI view** to see exactly what I receive.'))}
+async function chatStatus(){try{const s=await api('/api/chat/status');$('#chat-model').textContent=s.paused?'paused by owner':s.locked?'locked for you':s.ready?s.model:'not connected';
+  if(!s.ready&&!$('#setup'))$('#msgs').insertAdjacentHTML('afterbegin',`<div class="setup" id="setup"><b style="color:var(--text)">Connect Claude</b><br>1. Create an API key at console.anthropic.com.<br>2. Add to <code>agent/.env</code>: <code>ANTHROPIC_API_KEY=sk-ant-...</code><br>3. Send a message. No restart needed. The key stays on this machine.</div>`);if(s.ready)$('#setup')?.remove()}catch{}}
+async function send(text){text=text.trim();if(!text||chatBusy)return;hideHist();keepChat();chatBusy=true;$('#b-send').disabled=true;$('#chat-in').value='';$('#chat-in').style.height='auto';
+  const ub=bubble('msg u',md(text));const steps={};let r;
+  try{r=await fetch('/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chatId,text,context:ctx()})});if(r.status===401){location.href='/login';return}}catch(e){bubble('msg err','Mandate server not reachable.');chatBusy=false;$('#b-send').disabled=false;return}
+  const rd=r.body.getReader(),dec=new TextDecoder();let buf='';const thinking=bubble('step','<span class="s"></span>Thinking…');
+  for(;;){const {value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
+    while((i=buf.indexOf('\n'))>=0){const line=buf.slice(0,i);buf=buf.slice(i+1);if(!line.trim())continue;const ev=JSON.parse(line);thinking.remove();
+      if(ev.type==='ai_view'){ub.innerHTML=`<div class="real">${md(text)}</div><div class="aiv"><div class="aiv-tag">What the AI received</div>${md(ev.text)}</div>`;if($('#msgs').classList.contains('aimode'))ub.classList.add('ai')}
+      if(ev.type==='text')bubble('msg a',md(ev.text),ev.ai);
+      if(ev.type==='newclient'){const d=bubble('privacy',`<b>🔒 New clients are added on this machine, not through the AI.</b><br>Nothing was sent to the AI. Check the details and save:<div class="row" style="margin-top:8px"><button class="btn pri">Open New client form</button></div>`);d.querySelector('button').onclick=()=>openClientForm(ev.name,ev.travellers)}
+      if(ev.type==='unknown_names'){const d=bubble('privacy',`<b>🔒 ${ev.names.map(esc).join(', ')} ${ev.names.length>1?"aren't clients":"isn't a client"} yet.</b><br>Mandate only sends the AI placeholders for people it knows, so nothing was sent. Add them first, then ask again.<div class="row" style="margin-top:8px"><button class="btn pri">Add as a new client</button></div>`);d.querySelector('button').onclick=()=>{const fam=ev.names.find(n=>/family$/i.test(n));openClientForm(fam||'',ev.names.filter(n=>!/family$/i.test(n)))}}
+      if(ev.type==='error'){bubble('msg err',md(ev.text));chatStatus()}
+      if(ev.type==='blocked'){bubble('msg err','<b>⛨ Blocked by Mandate guardrails</b> · '+esc(ev.category)+'<br>'+md(ev.text));secBadge()}
+      if(ev.type==='tool'&&ev.state==='run')steps[ev.name]=bubble('step','<span class="s"></span>'+esc(ev.label));
+      if(ev.type==='tool'&&ev.state!=='run'){const el=steps[ev.name];if(el){el.className='step '+ev.state;el.innerHTML='<span class="s"></span>'+esc(el.textContent)+(ev.summary?' · '+esc(ev.summary):'')}
+        if(ev.data&&ev.data.length)bubble('offers',ev.data.slice(0,5).map(o=>`<div><span>${esc(o.hotel||((o.carrier||'')+' '+(o.depart||'')))}<span class="dim"> · ${esc(clean(o.provider))}</span></span><span class="p">$${esc(o.priceUsd)}</span></div>`).join(''))}
+      $('#msgs').scrollTop=$('#msgs').scrollHeight}}
+  thinking.remove();chatBusy=false;$('#b-send').disabled=false;$('#chat-in').focus();loadCrm();refreshState();if(POP)bc?.postMessage({type:'refresh'})}
+$('#b-send').onclick=()=>send($('#chat-in').value);
+$('#chat-in').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send($('#chat-in').value)}});
+$('#chat-in').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(140,e.target.scrollHeight)+'px'});
+$$('#sugg span').forEach(s=>s.onclick=()=>send(s.textContent));
+$('#b-newchat').onclick=()=>{chatId=newId();keepChat();hideHist();welcome();chatStatus()};
+$('#b-chat').onclick=()=>$('#app').classList.toggle('nochat');
+(()=>{const app=$('#app'),h=$('#chat-resize');const set=w=>{w=Math.max(300,Math.min(Math.round(innerWidth*0.65),w));app.style.setProperty('--chatw',w+'px');try{localStorage.setItem('mt-chatw',w)}catch{}};
+  try{const w=+localStorage.getItem('mt-chatw');if(w)set(w)}catch{}
+  h.addEventListener('mousedown',e=>{e.preventDefault();h.classList.add('on');document.body.classList.add('resizing');app.classList.remove('nochat');
+    const mv=ev=>set(innerWidth-ev.clientX),up=()=>{h.classList.remove('on');document.body.classList.remove('resizing');removeEventListener('mousemove',mv);removeEventListener('mouseup',up)};addEventListener('mousemove',mv);addEventListener('mouseup',up)});
+  h.addEventListener('dblclick',()=>set(390));$$('.chat-size button').forEach(b=>b.onclick=()=>set(+b.dataset.w))})();
+function askAssistant(text){if(document.body.classList.contains('detached')&&bc){bc.postMessage({type:'prefill',text});popWin?.focus();return}$('#app').classList.remove('nochat');$('#chat-in').value=text;$('#chat-in').focus()}
+function dock(){document.body.classList.remove('detached');$('#app').classList.remove('nochat');popWin=null}
+if($('#b-pop'))$('#b-pop').onclick=()=>{popWin=window.open('/?assistant=1','mandate-assistant','popup,width=480,height=860');if(!popWin){alert('Allow pop-ups for this page to open the assistant in its own window.');return}document.body.classList.add('detached');$('#app').classList.add('nochat');setTimeout(showCtx,800)};
+$('#b-dock').onclick=()=>{bc?.postMessage({type:'close'});dock()};
+if(bc)bc.onmessage=({data:m})=>{
+  if(POP){if(m.type==='ping')bc.postMessage({type:'hello'});if(m.type==='ctx'){remoteCtx=m.ctx;showCtx()}if(m.type==='prefill'){$('#chat-in').value=m.text;$('#chat-in').focus()}if(m.type==='close')window.close();return}
+  if(m.type==='hello'){document.body.classList.add('detached');$('#app').classList.add('nochat');showCtx()}
+  if(m.type==='closed')dock();if(m.type==='refresh'){refreshState();loadCrm()}if(m.type==='openClientForm'){openClientForm(m.name,m.travellers);window.focus()}};
+if(POP){bc?.postMessage({type:'hello'});addEventListener('pagehide',()=>bc?.postMessage({type:'closed'}))}else bc?.postMessage({type:'ping'});
+$('#ai-view').onchange=e=>{$('#msgs').classList.toggle('aimode',e.target.checked);$$('#msgs .msg').forEach(m=>{if(m.querySelector('.aiv'))m.classList.toggle('ai',e.target.checked)})};
+function openClientForm(name,travellers){if(POP&&bc){bc.postMessage({type:'openClientForm',name,travellers});return}location.hash='#clients';setTimeout(()=>{$('#client-form').style.display='block';$('#cf-name').value=name||'';$('#cf-msg').textContent='';
+  $('#cf-travellers').innerHTML=(travellers&&travellers.length?travellers:['']).map(n=>travRow({fullName:n})).join('');$('#client-form').scrollIntoView({behavior:'smooth'});$('#cf-name').focus()},50)}
+// ---------- live updates ----------
+async function refreshState(){try{const s=await api('/state');st.contract=s.contract;for(const o of s.orders||[])st.orders.set(o.id,o);renderAll()}catch{}}
+function startEvents(){const es=new EventSource('/events');es.onerror=()=>{if(es.readyState===2)setTimeout(startEvents,3000)};
+  es.onmessage=m=>{const ev=JSON.parse(m.data);
+    if(ev.type==='log'){addLog(ev);if(/accepted|REFUSED|error|confirmed on chain|failed/i.test(ev.data.text))proving(false);else if(/Agency console:.*proof/.test(ev.data.text))proving(true,'The agency is signing a policy change…')}
+    if(ev.type==='proving')proving(true);
+    if(ev.type==='order'){if(ev.data.tripId&&!st.crm.trips.some(t=>t.id===ev.data.tripId))loadCrm();st.orders.set(ev.data.id,ev.data);if(ev.data.status!=='cancelled')st.sel=ev.data.id;renderAll();if(ev.data.status==='paid')loadPublic()}
+    if(ev.type==='budget'){st.budget=ev.data;renderAll()}
+    if(ev.type==='agent'){st.agentActive=ev.data.active;renderAll()}
+    if(ev.type==='fares')renderFares(ev.data);
+    if(ev.type==='security'){secBadge();if(curView()==='team')loadSecurity()}}}
+(async()=>{await loadMe();if(!st.me)return;
+  try{const s=await api('/state');st.contract=s.contract;for(const o of s.orders||[])st.orders.set(o.id,o)}catch{}
+  await loadCrm();route();startEvents();loadPublic();setInterval(loadPublic,30000);setInterval(refreshState,15000);secBadge();setInterval(secBadge,30000);welcome();chatStatus();showCtx()})();
+</script></body></html>

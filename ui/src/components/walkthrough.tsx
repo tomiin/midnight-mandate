@@ -344,7 +344,7 @@ export function Walkthrough() {
         expectRefusal: false,
         title: `${name} books a flight for $${groupDigits(firstSpend.toString())}`,
         body: `Now the agent acts on its own. In one proof it shows: it is currently authorized, for this category, this request is not a replay, and the booking fits the budget. The airline gets a proof it's valid, but never learns who authorized the agent or what the budget is for. (The cap and totals themselves are public numbers.)`,
-        action: () => tx.exercise(CATEGORY, firstSpend),
+        action: () => tx.exercise(CATEGORY, firstSpend, crypto.getRandomValues(new Uint8Array(32))),
       },
       {
         id: "spend-over",
@@ -354,7 +354,7 @@ export function Walkthrough() {
         body: `$${groupDigits(firstSpend.toString())} + $${groupDigits(overSpend.toString())} is one dollar over the $${groupDigits(cap!.toString())} cap. The budget is a running sum across bookings, not a per-booking check, and it's enforced to the dollar. Refusal here is the feature, not a bug.`,
         expectedReason: "category budget exceeded for this period",
         refusal: `Over budget: $${groupDigits(firstSpend.toString())} already spent, plus $${groupDigits(overSpend.toString())} is more than the $${groupDigits(cap!.toString())} cap.`,
-        action: () => tx.exercise(CATEGORY, overSpend),
+        action: () => tx.exercise(CATEGORY, overSpend, crypto.getRandomValues(new Uint8Array(32))),
       },
       {
         id: "revoke",
@@ -372,7 +372,7 @@ export function Walkthrough() {
         body: `The grant is still sitting in the Merkle tree and there's still budget left. It's refused anyway, purely because registration is checked live, every time — being in the tree once is never enough on its own.`,
         expectedReason: "agent is not currently authorized",
         refusal: `Not authorized: ${name} has been fired, so no booking can go through.`,
-        action: () => tx.exercise(CATEGORY, postRevokeSpend),
+        action: () => tx.exercise(CATEGORY, postRevokeSpend, crypto.getRandomValues(new Uint8Array(32))),
       },
     ];
     return list;

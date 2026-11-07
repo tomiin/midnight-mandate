@@ -25,7 +25,8 @@ export type ImpureCircuits<PS> = {
                      category_0: bigint): __compactRuntime.CircuitResults<PS, []>;
   exercise(context: __compactRuntime.CircuitContext<PS>,
            category_0: bigint,
-           amount_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+           amount_0: bigint,
+           orderRef_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
 }
 
 export type ProvableCircuits<PS> = {
@@ -42,7 +43,8 @@ export type ProvableCircuits<PS> = {
                      category_0: bigint): __compactRuntime.CircuitResults<PS, []>;
   exercise(context: __compactRuntime.CircuitContext<PS>,
            category_0: bigint,
-           amount_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+           amount_0: bigint,
+           orderRef_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
 }
 
 export type PureCircuits = {
@@ -70,7 +72,8 @@ export type Circuits<PS> = {
                      category_0: bigint): __compactRuntime.CircuitResults<PS, []>;
   exercise(context: __compactRuntime.CircuitContext<PS>,
            category_0: bigint,
-           amount_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+           amount_0: bigint,
+           orderRef_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
 }
 
 export type Ledger = {
@@ -115,6 +118,13 @@ export type Ledger = {
   };
   readonly grantsIssued: bigint;
   readonly exercisedCount: bigint;
+  paidOrders: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): bigint;
+    [Symbol.iterator](): Iterator<[Uint8Array, bigint]>
+  };
 }
 
 export type ContractReferenceLocations = any;

@@ -75,6 +75,10 @@ export ledger categoryLimit: Map<Uint<16>, Uint<64>>;
 // Public counters. Aggregate only; they identify nobody.
 export ledger grantsIssued: Counter;
 export ledger exercisedCount: Counter;
+// Order binding: merchant order reference (a hash of the merchant's order id) -> amount paid.
+// Lets a merchant confirm on the public ledger that THIS order was paid THIS amount, and makes
+// paying the same order twice impossible. Reveals nothing about the principal.
+export ledger paidOrders: Map<Bytes<32>, Uint<64>>;
 
 // ---- private witnesses ------------------------------------------------------
 
@@ -231,7 +235,7 @@ export circuit issueAuthorization(agent: Bytes<32>, category: Uint<16>): [] {
 //
 // The counterparty learns that it passed; the amount, running total and
 // agent pseudonym are disclosed to the public ledger.
-export circuit exercise(category: Uint<16>, amount: Uint<64>): [] {
+export circuit exercise(category: Uint<16>, amount: Uint<64>, orderRef: Bytes<32>): [] {
   const sk = localSecretKey();
   const agent = agentId(sk);
 
@@ -269,8 +273,12 @@ export circuit exercise(category: Uint<16>, amount: Uint<64>): [] {
   const total = (used + disclose(amount)) as Uint<64>;
   assert(total <= cap, "Mandate: category budget exceeded for this period");
 
+  // 6. Each merchant order can be paid exactly once.
+  assert(!paidOrders.member(disclose(orderRef)), "Mandate: order already paid");
+
   // Record. The request is spent everywhere, and the running total is bumped.
   spentRequests.insert(disclose(nf), true);
   spend.insert(disclose(key), disclose(total));
+  paidOrders.insert(disclose(orderRef), disclose(amount));
   exercisedCount.increment(1);
 }

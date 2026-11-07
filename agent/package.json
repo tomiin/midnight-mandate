@@ -1,0 +1,36 @@
+{
+  "name": "mandate-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Mandate agent: MCP tools + REST API so any AI can search, book and pay with a Mandate proof.",
+  "scripts": {
+    "spike": "tsx --env-file-if-exists=.env src/spike.ts",
+    "spike:preprod": "MN_NETWORK=preprod tsx --env-file-if-exists=.env src/spike.ts",
+    "mcp": "tsx --env-file-if-exists=.env src/mcp.ts",
+    "demo:reset": "tsx --env-file-if-exists=.env src/reset.ts",
+    "demo:reset:preprod": "MN_NETWORK=preprod tsx --env-file-if-exists=.env src/reset.ts",
+    "serve": "tsx --env-file-if-exists=.env src/serve.ts",
+    "reset-owner": "tsx src/reset-owner.ts"
+  },
+  "dependencies": {
+    "@midnight-ntwrk/wallet-sdk": "1.2.0",
+    "@midnight-ntwrk/midnight-js-protocol": "^4.1.1",
+    "@midnight-ntwrk/midnight-js-contracts": "^4.1.1",
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "^4.1.1",
+    "@midnight-ntwrk/midnight-js-node-zk-config-provider": "^4.1.1",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "^4.1.1",
+    "@midnight-ntwrk/midnight-js-network-id": "^4.1.1",
+    "@midnight-ntwrk/midnight-js-types": "^4.1.1",
+    "@midnight-ntwrk/compact-js": "2.5.1",
+    "@midnight-ntwrk/compact-runtime": "0.16.0",
+    "@midnight-ntwrk/ledger-v8": "^8.1.0",
+    "rxjs": "^7.8.1",
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.0",
+    "@types/node": "^22.15.29"
+  }
+}

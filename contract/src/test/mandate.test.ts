@@ -208,3 +208,39 @@ describe("Mandate — a path must belong to the caller's own grant", () => {
     expect(() => sim.as('alice').exercise(category, 10n)).not.toThrow();
   });
 });
+
+describe('Mandate — order binding (Wave 3)', () => {
+  const ORDER_1 = key('order-NA-1041');
+  const ORDER_2 = key('order-NA-1042');
+
+  function ready() {
+    const { sim, category, agentSk } = deploy({ limit: 500n });
+    sim.as('principal').issueAuthorization(agentId(agentSk), category);
+    return { sim, category };
+  }
+
+  it('records the paid amount against the merchant order reference', () => {
+    const { sim, category } = ready();
+    sim.requesting('agent', REQ_A).as('agent').exercise(category, 216n, ORDER_1);
+    const ledger = sim.getLedger();
+    expect(ledger.paidOrders.member(ORDER_1)).toBe(true);
+    expect(ledger.paidOrders.lookup(ORDER_1)).toBe(216n);
+    expect(ledger.paidOrders.member(ORDER_2)).toBe(false);
+  });
+
+  it('refuses to pay the same order twice, even with a fresh request id', () => {
+    const { sim, category } = ready();
+    sim.requesting('agent', REQ_A).as('agent').exercise(category, 100n, ORDER_1);
+    expect(() => sim.requesting('agent', REQ_B).as('agent').exercise(category, 100n, ORDER_1))
+      .toThrow(/order already paid/);
+    expect(sim.getLedger().exercisedCount).toBe(1n);
+  });
+
+  it('pays two different orders independently', () => {
+    const { sim, category } = ready();
+    sim.requesting('agent', REQ_A).as('agent').exercise(category, 216n, ORDER_1);
+    sim.requesting('agent', REQ_B).as('agent').exercise(category, 131n, ORDER_2);
+    expect(sim.getLedger().paidOrders.lookup(ORDER_2)).toBe(131n);
+    expect(sim.getLedger().exercisedCount).toBe(2n);
+  });
+});

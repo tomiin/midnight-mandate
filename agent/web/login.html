@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in · Mandate Travel</title>
+<style>
+:root{--bg:#F3F7F7;--card:#fff;--line:#E2EAEA;--text:#0F2E33;--mute:#5F6B6D;--acc:#0E5E63;--coral:#E8735A;--bad:#B42318}
+*{box-sizing:border-box}html{background:var(--acc)}body{margin:0;min-height:100vh;align-items:stretch;display:grid;grid-template-columns:1.1fr 1fr;background:var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+.hero{background:var(--acc);color:#fff;padding:56px;min-height:100vh;position:sticky;top:0;display:flex;flex-direction:column;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:600}.mk{width:30px;height:30px;border-radius:8px;background:#fff;color:var(--acc);display:grid;place-items:center;font-weight:700}
+.brand b{color:#FFB4A2;font-weight:600}
+.hero h1{font-size:34px;line-height:1.2;font-weight:600;margin:0 0 12px;max-width:520px}.hero p{color:#CFE6E6;max-width:480px;margin:0}
+.facts{display:flex;gap:28px;color:#CFE6E6;font-size:13px}.facts b{display:block;color:#fff;font-size:15px}
+.side{display:grid;place-items:center;padding:40px}
+form{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px}
+h2{margin:0 0 4px;font-size:22px;font-weight:600}.sub{color:var(--mute);margin:0 0 20px;font-size:14px}
+label{display:block;font-size:13px;color:var(--mute);margin:14px 0 6px}
+input{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;color:var(--text);background:#fff}
+input:focus{outline:2px solid #9FD3D1;border-color:var(--acc)}
+button{width:100%;margin-top:20px;font:inherit;font-weight:600;padding:11px;border:0;border-radius:10px;background:var(--acc);color:#fff;cursor:pointer}button:disabled{opacity:.6}
+.err{color:var(--bad);font-size:13px;margin-top:12px;min-height:18px}.note{font-size:12px;color:var(--mute);margin-top:16px}
+@media(max-width:860px){body{grid-template-columns:1fr}.hero{display:none}}
+</style></head><body>
+<div class="hero">
+  <div class="brand"><span class="mk">M</span>Mandate <b>Travel</b></div>
+  <div><h1>Your agents book. Your mandate decides what they can spend.</h1><p>Every booking is paid with a zero-knowledge proof on Midnight. Suppliers see that it's authorized and within budget, never who your clients are.</p></div>
+  <div class="facts"><div><b>Private</b>Clients stay off chain</div><div><b>Accountable</b>Every action signed and logged</div><div><b>Enforced</b>Over-budget is refused</div></div>
+</div>
+<div class="side">
+  <form id="f" autocomplete="on">
+    <h2 id="t">Sign in</h2><p class="sub" id="s">Harbor &amp; Co. Travel back office</p>
+    <div id="nameRow" style="display:none"><label for="name">Your name</label><input id="name" autocomplete="name"></div>
+    <label for="u">Username</label><input id="u" autocomplete="username" required>
+    <label for="p">Password</label><input id="p" type="password" autocomplete="current-password" required>
+    <div id="codeRow" style="display:none"><label for="c">6-digit code from your authenticator app</label><input id="c" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>
+    <button id="b">Sign in</button>
+    <div class="err" id="e"></div>
+    <div class="note" id="n">Sign-ins are recorded in the agency's private activity log.</div>
+    <details class="note" id="forgot" style="margin-top:8px"><summary style="cursor:pointer">Forgot your password?</summary>On the computer that runs Mandate Travel, open Terminal in the <code>agent</code> folder and run <code>npm run reset-owner</code>, then restart the app.</details>
+  </form>
+</div>
+<script>
+const $=s=>document.querySelector(s);let setup=false;
+fetch('/api/auth/state').then(r=>r.json()).then(s=>{if(s.user){location.href='/';return}
+  if(s.setupNeeded){setup=true;$('#t').textContent='Set up the owner account';$('#s').textContent='First run. This account controls the mandate and the team.';$('#nameRow').style.display='block';$('#name').required=true;$('#p').autocomplete='new-password';$('#b').textContent='Create account';$('#n').textContent='Use a password of at least 12 characters. It is stored only as a hash on this machine.';$('#forgot').style.display='none'}});
+$('#f').onsubmit=async e=>{e.preventDefault();$('#e').textContent='';$('#b').disabled=true;
+  try{const r=await fetch(setup?'/api/auth/setup':'/api/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:$('#name').value,username:$('#u').value,password:$('#p').value,code:$('#c').value})});
+    const j=await r.json();if(j.needsCode){$('#codeRow').style.display='block';$('#c').focus()}if(!r.ok)throw new Error(j.error||'Sign-in failed');location.href='/'}
+  catch(err){$('#e').textContent=err.message}finally{$('#b').disabled=false}};
+</script></body></html>

@@ -1,0 +1,4 @@
+.spike-state*.json
+.wallet-checkpoint*.json
+.env
+data/

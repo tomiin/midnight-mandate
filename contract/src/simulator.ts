@@ -105,8 +105,9 @@ export class MandateSimulator {
   issueAuthorization(agent: Uint8Array, category: bigint): void {
     this.commit(this.contract.impureCircuits.issueAuthorization(this.circuitContext, agent, category));
   }
-  exercise(category: bigint, amount: bigint): void {
-    this.commit(this.contract.impureCircuits.exercise(this.circuitContext, category, amount));
+  /** orderRef defaults to a fresh random reference so older tests keep their meaning. */
+  exercise(category: bigint, amount: bigint, orderRef: Uint8Array = crypto.getRandomValues(new Uint8Array(32))): void {
+    this.commit(this.contract.impureCircuits.exercise(this.circuitContext, category, amount, orderRef));
   }
   isAgent(id: Uint8Array): boolean {
     return this.commit(this.contract.impureCircuits.isAgent(this.circuitContext, id));
