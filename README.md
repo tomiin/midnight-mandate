@@ -2,50 +2,75 @@
 
 [![Tests](https://github.com/tomiin/midnight-mandate/actions/workflows/tests.yml/badge.svg)](https://github.com/tomiin/midnight-mandate/actions/workflows/tests.yml)
 
-**Wave 3:** [demo video (4:42)](https://youtu.be/TmcFZa4_jSI) · [deck](docs/deck/Mandate-Wave3-deck.pdf) · [judge walkthrough](docs/WAVE3.md) · [business case](docs/BUSINESS.md)
+**AI agents that pay inside a budget they can't break.** Mandate is a
+spending authorization for AI agents, written in Compact on the Midnight
+Network. An agent proves it's authorized and within its budget without
+revealing who it works for. Over budget or revoked, it can't build a valid
+proof at all, so the contract refuses the payment and nothing is charged.
 
-A privacy-preserving spending authorization for AI agents, written in Compact
-on the Midnight Network. Built for Midnight's Buildathon (Akindo): Wave 2
-(Sep 27 - Oct 17 2026) and Wave 3 (Oct 27 - Nov 16 2026).
+**Mandate Travel** is the first product on top of it: a travel agency back
+office where an AI assistant books and pays for client trips with a Mandate
+proof on every payment.
 
-Mandate lets an AI agent prove it's authorized to spend, and within its
-budget, without revealing who it works for or what the budget is for. An
-agent that goes over its cap, or has been revoked, can't build a valid proof
-at all, so the refusal happens on its own machine and nothing is submitted.
+## Wave 3 (Midnight Buildathon, Nov 2026)
 
-**Try it without a wallet:** [tomiin.github.io/midnight-mandate](https://tomiin.github.io/midnight-mandate/)
-replays the real Preprod run, refusals included.
+**[Demo video (4:42)](https://youtu.be/TmcFZa4_jSI)** ·
+**[Deck](docs/deck/Mandate-Wave3-deck.pdf)** ·
+**[Judge walkthrough](docs/WAVE3.md)** ·
+**[Business case](docs/BUSINESS.md)**
 
-**Demo video (2 min, captions, recorded live on Preprod):** [youtu.be/tt_2N3Ekv6U](https://youtu.be/tt_2N3Ekv6U)
+![The AI booked and paid a $502 flight with a Mandate proof (block 3995); AI view shows it only saw placeholders, never names](docs/screenshots/05-wave3-paid-ai-view.jpg)
 
-**Deck:** [docs/deck/Mandate-Wave2-deck.pdf](docs/deck/Mandate-Wave2-deck.pdf)
+*The assistant booked a flight for two and paid it with a Mandate proof on
+Midnight. "AI view" is on: the AI saw Client-B3F7 and Traveller-FD23, never
+the client's real names.*
 
-![Steps 5 and 7 refused: over budget, and agent fired](docs/screenshots/02-refusals-dark.png)
+### What's new since Wave 2
+
+- **Order-bound payments (contract upgrade).** `exercise(category, amount, orderRef)` now records `orderRef → amount` in a new `paidOrders` ledger map and refuses a second payment for the same order. The merchant computes `orderRef = sha256("mandate:order:v1|merchant|orderId")` itself and checks its own order on the public ledger.
+- **Mandate Travel Lite, a travel back office** (simulated providers, clearly labelled): owner sign-in, clients and travellers, trips with the budget the client approved, over-budget bookings sent to **Approvals**, and invoices with who booked what and when.
+- **A built-in AI assistant** (bring your own Claude API key): it searches six providers, books inside a trip and pays with a Mandate proof, only after a human "yes".
+- **Any AI can use it.** An MCP server for Claude Desktop (`npm run mcp`) and a REST API with an OpenAPI spec (`npm run serve`, `/api/v1/openapi.json`).
+- **Privacy proxy.** Client, traveller and owner names become placeholders before anything reaches the AI provider, and are swapped back on the agency's machine. **AI view** shows exactly what the AI received.
+- **Public verification, no wallet.** Every invoice line has a **Verify** link that recomputes the order reference in the browser and reads the Midnight ledger. No names are shown or stored on chain.
+- **Encrypted backups on Lumera Cascade.** Records are sealed on the agency's machine (scrypt + AES-256-GCM) and stored on Cascade. Restore from the backup ID and passphrase.
+- **Tests and CI.** 21 contract tests (3 new) and 20 new agent tests (budget → Approvals, no double payment, privacy proxy), run by GitHub Actions on every push.
+
+### Tested end to end (Nov 7, 2026, local Midnight network, shown in the video)
+
+| Step | Result |
+|---|---|
+| AI books a flight for two, owner says "yes" | **Paid** $502 with a Mandate proof (block 3995) |
+| AI books a $768 hotel on a $300 trip | Sent to **Approvals**; owner approves; **paid** |
+| Owner revokes the agent, then approves another booking | **Refused by the contract**: `agent is not currently authorized`. Nothing submitted |
+| Agent reinstated | Active again |
+| Client opens **Verify** from the invoice | "Verified: $768.00 paid for order NA-7B64LO7", read from the public ledger |
+| Back up to Cascade | Encrypted backup stored (action 90716) |
+
+<p>
+<img src="docs/screenshots/07-wave3-refused.jpg" width="49%" alt="Approved, but the Midnight contract refused the payment: agent is not currently authorized">
+<img src="docs/screenshots/06-wave3-verify.jpg" width="49%" alt="Verified: $768.00 paid for order NA-7B64LO7, checked against the public Midnight ledger">
+</p>
+
+Run it yourself: [docs/WAVE3.md](docs/WAVE3.md) (8 steps, about 20 minutes on a local Midnight network).
+
+The full **Mandate Travel** edition adds staff accounts with roles and 2-step sign-in, a tamper-evident audit log, AI guardrails and misuse reporting, encrypted travel documents, saved assistant history and client statements. Those modules are not part of this open-source repository.
 
 **Not hidden:** the cap, running totals and spend amounts are plain numbers on
 the public ledger; they just aren't tied to anyone. See
 [Honest limits](#honest-limits).
 
-## Wave 3: an AI agent that actually pays
+## Wave 2 (Sep–Oct 2026): the contract live on Preprod
 
-**New this wave:** Mandate now runs end to end with a real AI agent. You type a request ("flights to Lisbon Dec 12 for the Smith family"), the agent searches several travel providers, books, and pays with a Mandate proof. Over-budget or revoked payments are refused by the contract, live, and every payment is bound to exactly one order.
+Wave 2 shipped the Mandate contract and a 7-step walkthrough, run live on Midnight Preprod.
 
-What changed since Wave 2:
+**Try it without a wallet:** [tomiin.github.io/midnight-mandate](https://tomiin.github.io/midnight-mandate/)
+replays the real Preprod run, refusals included. ·
+**Wave 2 video (2 min, recorded live on Preprod):** [youtu.be/tt_2N3Ekv6U](https://youtu.be/tt_2N3Ekv6U) ·
+**Wave 2 deck:** [docs/deck/Mandate-Wave2-deck.pdf](docs/deck/Mandate-Wave2-deck.pdf)
 
-- **Order-bound payments (contract upgrade).** `exercise(category, amount, orderRef)` now records `orderRef → amount` in a new `paidOrders` ledger map and refuses a second payment for the same order. The merchant computes `orderRef = sha256("mandate:order:v1|merchant|orderId")` itself and checks its own order on the public ledger. 21/21 contract tests pass (3 new).
-- **A headless agent** (`agent/`): wallet, proofs from a local proof server, contract calls, and merchant-side verification by reading `paidOrders` from the indexer.
-- **Any AI can use it.** An MCP server for Claude Desktop (`npm run mcp`) and a REST API with an OpenAPI spec (`npm run serve`, `/api/v1/openapi.json`) for ChatGPT actions, OpenAI or Gemini function calling, or your own agent.
-- **Mandate Travel Lite, a travel back office** (simulated providers, clearly labeled): owner sign-in, clients and travellers, trips with budgets, over-budget bookings sent to **Approvals**, invoices per trip or per client-day with who booked and when, a supplier's checkout view, and a public ledger page.
-- **A built-in assistant** (bring your own Claude API key): it searches, books inside a trip and pays with a Mandate proof. Money only moves after a human "yes" in the chat.
-- **Privacy proxy.** Client, traveller and owner names are replaced with placeholders (Client-3F2A, Traveller-8FBF) before anything reaches the AI provider, and swapped back on the agency's machine. **AI view** shows exactly what the AI received. Unknown names are held back; new clients are added through a form, never through the AI.
-- **Encrypted backups on Lumera Cascade.** The agency's records are sealed on its machine (scrypt + AES-256-GCM, passphrase only the owner knows) and stored on Lumera Cascade. Restore from the backup ID and passphrase.
-- **Public verification, no wallet.** Every invoice line has a **Verify** link. `/verify` recomputes the order reference in the browser and reads the Midnight ledger: "Verified: $944 paid for order NA-…". The client checks the agency's spending without the agency opening its books, and the page never shows a name.
+![Wave 2 on Preprod: steps 5 and 7 refused, over budget and agent fired](docs/screenshots/02-refusals-dark.png)
 
-Run it: see [docs/WAVE3.md](docs/WAVE3.md). Demo video and deck: linked on the AKINDO submission.
-
-The full **Mandate Travel** edition adds staff accounts with roles and 2-step sign-in, a tamper-evident audit log, AI guardrails and misuse reporting, encrypted travel documents, saved assistant history and client statements. Those modules are not part of this open-source repository.
-
-## Live on Preprod
 
 | | |
 |---|---|
@@ -84,6 +109,8 @@ from the indexer. On Preprod today that still needs a local proof server,
 because the remote one rejects proofs this size (see below).
 
 ## Running it
+
+> **Running the Wave 3 travel app (Mandate Travel Lite)?** Follow [docs/WAVE3.md](docs/WAVE3.md). This section covers the Wave 2 contract web UI and walkthrough.
 
 ### What you need
 
