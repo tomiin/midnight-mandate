@@ -2,6 +2,9 @@
 
 [![Tests](https://github.com/tomiin/midnight-mandate/actions/workflows/tests.yml/badge.svg)](https://github.com/tomiin/midnight-mandate/actions/workflows/tests.yml)
 
+> [!NOTE]
+> This project is built on the Midnight Network.
+
 **AI agents that pay inside a budget they can't break.** Mandate is a
 spending authorization for AI agents, written in Compact on the Midnight
 Network. An agent proves it's authorized and within its budget without
@@ -58,6 +61,84 @@ The full **Mandate Travel** edition adds staff accounts with roles and 2-step si
 
 **Not hidden:** the cap, running totals and spend amounts are plain numbers on
 the public ledger; they just aren't tied to anyone. See
+[Honest limits](#honest-limits).
+
+## How Mandate uses Midnight
+
+Midnight keeps two kinds of state. **Public ledger state** lives on chain
+and anyone can read it. **Private state** stays on the user's own machine and
+only enters the system as input to a zero-knowledge proof. Mandate is built
+around that split: the contract ([`contract/src/mandate.compact`](contract/src/mandate.compact))
+enforces the rules on public state, while the facts that would identify the
+agency or its clients never leave the agency's machine.
+
+```mermaid
+flowchart LR
+  subgraph Agency["Agency's machine (private)"]
+    SK["localSecretKey()<br/>agent's secret key"]
+    RID["requestId()<br/>fresh per payment"]
+    GP["grantPath()<br/>Merkle path to its grant"]
+    PS["Proof server<br/>builds the ZK proof"]
+    SK --> PS
+    RID --> PS
+    GP --> PS
+  end
+  subgraph Chain["Midnight public ledger"]
+    C["Mandate contract<br/>exercise(category, amount, orderRef)"]
+    L["agents · authorized · spentRequests<br/>spend · categoryLimit · paidOrders"]
+    C --> L
+  end
+  PS -- "proof + disclosed values only" --> C
+  M["Supplier / client"] -- "reads paidOrders[orderRef]<br/>(Verify page, no wallet)" --> L
+```
+
+### Public ledger state (what anyone can see)
+
+| Ledger field | Type | What it holds |
+|---|---|---|
+| `principal` | `sealed Bytes<32>` | The owner's actor id, set once at deploy |
+| `agents` | `Map<Bytes<32>, Boolean>` | Agent pseudonym → currently allowed? (the live kill switch) |
+| `authorized` | `HistoricMerkleTree<10, Bytes<32>>` | Commitments to every (agent, category) grant. Historic, so older proofs stay valid |
+| `spentRequests` | `Map<Bytes<32>, Boolean>` | Nullifiers of payment requests already used (no replays) |
+| `period` | `Uint<64>` | Current budget period; spend resets when it advances |
+| `spend` | `Map<Bytes<32>, Uint<64>>` | Quota key → amount spent this period |
+| `categoryLimit` | `Map<Uint<16>, Uint<64>>` | Category → cap per agent per period |
+| `paidOrders` | `Map<Bytes<32>, Uint<64>>` | Order reference → amount paid (Wave 3; one payment per order) |
+| `grantsIssued`, `exercisedCount` | `Counter` | Aggregate counts that identify nobody |
+
+### Private state (never on chain)
+
+| Witness | What it is | Why it stays private |
+|---|---|---|
+| `localSecretKey()` | The agent's (or owner's) secret key | Only a one-way hash of it (`agentId`/`actorId`) ever appears on chain |
+| `requestId()` | A fresh id for each payment attempt | Combined with the key into a nullifier, so the request can't be replayed or traced back |
+| `grantPath(leaf)` | The Merkle path to this agent's grant | Proves the grant exists without revealing which leaf it is |
+
+Off chain, the agency's back office keeps client names, travellers, passports
+and bookings in its own records. Those are never sent to the contract.
+
+### What `exercise()` proves in one zero-knowledge proof
+
+1. The caller holds a grant the owner issued, for this category: Merkle membership in `authorized`, with the path's leaf bound to `grantLeaf(agentId(sk), category)` so a stolen path can't be reused.
+2. The agent is still active right now (`agents`), checked on every payment, so revocation takes effect immediately.
+3. This request hasn't been processed before (nullifier not in `spentRequests`).
+4. Spent this period plus this amount is within the category cap.
+5. This order hasn't been paid before (`orderRef` not in `paidOrders`).
+
+Only then does it record the nullifier, the new running total and
+`paidOrders[orderRef] = amount`. If any check fails, the proof can't be built,
+so the refusal happens on the agency's machine and nothing is submitted.
+
+**Domain separation:** every hash carries its own tag (`mandate:agent:v1`,
+`mandate:actor:v1`, `mandate:grant:v1`, `mandate:request:v1`,
+`mandate:quota:v1`, `mandate:order:v1`), so values derived from the same key
+for different purposes can't be linked or collide.
+
+**What is disclosed, honestly:** each payment discloses the agent's
+pseudonym (for the live revocation check), the category, the amount, the
+running total and the order reference. That makes one agent's payments
+linkable to each other, but not to the agency or client. Hiding the amounts
+(private budgets) and making agents unlinkable are the next milestone. See
 [Honest limits](#honest-limits).
 
 ## Wave 2 (Sep–Oct 2026): the contract live on Preprod
