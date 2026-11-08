@@ -1,5 +1,9 @@
 # Mandate
 
+[![Tests](https://github.com/tomiin/midnight-mandate/actions/workflows/tests.yml/badge.svg)](https://github.com/tomiin/midnight-mandate/actions/workflows/tests.yml)
+
+**Wave 3:** [judge walkthrough](docs/WAVE3.md) · [business case](docs/BUSINESS.md)
+
 A privacy-preserving spending authorization for AI agents, written in Compact
 on the Midnight Network. Built for Midnight's Buildathon (Akindo): Wave 2
 (Sep 27 - Oct 17 2026) and Wave 3 (Oct 27 - Nov 16 2026).

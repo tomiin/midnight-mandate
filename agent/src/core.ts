@@ -20,15 +20,11 @@ import { allRecords } from './merchants.js';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 const webDir = resolve(dirname(fileURLToPath(import.meta.url)), '../web');
-import { createHash } from 'crypto';
 import { existsSync, readFileSync } from 'fs';
 import { STATE_PATH } from './config.js';
+import { orderRefOf, budgetCheck, payBlockReason } from './rules.js';
+export { orderRefOf };
 const savedContract = () => { try { return existsSync(STATE_PATH) ? JSON.parse(readFileSync(STATE_PATH, 'utf8')).contract : undefined; } catch { return undefined; } };
-
-// The order reference the merchant can compute on its own: a hash of merchant + order id.
-// It ties a payment proof to one specific order without revealing anything about the principal.
-export const orderRefOf = (merchant: string, orderId: string) =>
-  new Uint8Array(createHash('sha256').update(`mandate:order:v1|${merchant}|${orderId}`).digest());
 
 let session: Session | null = null;
 let connecting: Promise<Session> | null = null;
@@ -53,8 +49,7 @@ function bookForTrip(offer: { merchant: string; item: string; amount: number }, 
   const item = flight ? `${offer.item} × ${qty} traveller${qty > 1 ? 's' : ''}`
     : offer.item.replace(/, 1 night from .*/, `, ${t.rooms} room${t.rooms > 1 ? 's' : ''} × ${tv.nights} night${tv.nights > 1 ? 's' : ''} from ${t.start}`);
   const committed = allRecords().filter((o) => o.tripId === t.id && (o.status === 'paid' || o.status === 'awaiting_payment')).reduce((a, o) => a + Number(o.amount), 0);
-  const remaining = t.budget - committed;
-  const over = t.budget > 0 && amount > remaining;
+  const { remaining, over } = budgetCheck(t.budget, committed, amount);
   const o: any = createOrder(offer.merchant, item, amount, offerId, tv.client, actor, { tripId: t.id, qty, unitPrice: offer.amount, travellerIds: t.travellerIds, status: over ? 'needs_approval' : 'awaiting_payment' });
   if (!o.note) {
     audit(actor, over ? 'booked, sent to approvals' : 'booked', `${o.id} · ${tv.client} · ${t.title} · ${offer.merchant} · $${amount} (${qty} × $${offer.amount})`);
@@ -119,10 +114,8 @@ export const ops = {
   async pay(orderId: string, actor = 'AI agent') {
     const o = getOrder(orderId);
     if (!o) return { error: `No order ${orderId}` };
-    if (o.status === 'paid') return { error: `${orderId} is already paid`, txId: o.txId };
-    if (o.status === 'cancelled') return { error: `${orderId} was cancelled` };
-    if (o.status === 'needs_approval') return { error: `${orderId} is over the trip budget and is waiting for the owner's approval in Approvals. Do not retry until it is approved.` };
-    if (o.status === 'rejected') return { error: `${orderId} was rejected by the owner.` };
+    const blocked = payBlockReason(o);
+    if (blocked) return { error: blocked, ...(o.status === 'paid' ? { txId: o.txId } : {}) };
     const s = await getSession();
     log(`Paying ${o.id} ($${o.amount}) at ${o.merchant}: generating zero-knowledge proof…`, 'proof');
     emit('proving', { orderId: o.id, amount: o.amount });

@@ -1,0 +1,27 @@
+# Runs on every push and pull request:
+#   - contract tests: the compiled Mandate contract (contract/src/managed, committed) run in the
+#     Compact simulator, so no compiler or proof server is needed
+#   - agent tests: trip budget → Approvals, no double payment, order reference, privacy proxy
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Contract tests
+        run: npm test -w contract
+      - name: Agent tests
+        run: npm test -w agent

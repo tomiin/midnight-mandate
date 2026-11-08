@@ -11,7 +11,8 @@
     "demo:reset": "tsx --env-file-if-exists=.env src/reset.ts",
     "demo:reset:preprod": "MN_NETWORK=preprod tsx --env-file-if-exists=.env src/reset.ts",
     "serve": "tsx --env-file-if-exists=.env src/serve.ts",
-    "reset-owner": "tsx src/reset-owner.ts"
+    "reset-owner": "tsx src/reset-owner.ts",
+    "test": "vitest run test"
   },
   "dependencies": {
     "@midnight-ntwrk/wallet-sdk": "1.2.0",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "tsx": "^4.20.0",
+    "vitest": "^3.2.0",
     "@types/node": "^22.15.29"
   }
 }
