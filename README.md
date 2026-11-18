@@ -512,6 +512,12 @@ value-transfer version is the natural Wave 2-to-Wave-3 upgrade once this is
 actually tested against the real deployed stack (there's a half-built probe
 for exactly this in the `Privoice` repo).
 
+**Wave 3 note.** The near-term path is a card rail, with Mandate as the
+permission layer: Mandate never holds funds. The agency's money stays at the
+card-issuing bank; Mandate only creates a one-time card after the Midnight
+proof and approves the matching charge, and the AI agent never sees a card
+number. See [the path to real money](docs/BUSINESS.md#the-path-to-real-money).
+
 ## Verifying the Cascade backups yourself
 
 Keplr's History tab shows "No recent transaction history" for this account

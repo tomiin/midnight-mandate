@@ -86,7 +86,7 @@ The commercial edition adds what a staffed agency needs to run on it day to day.
 
 Mandate proves a payment was **allowed**. Something still has to **move** the money. There are two options, to be chosen with pilot agencies:
 
-- **Card or bank rail, with Mandate as the authorization and proof layer on top.** This works with suppliers today.
+- **Card or bank rail, with Mandate as the authorization and proof layer on top.** This works with suppliers today. Mandate never holds funds: the agency's money stays at the card-issuing bank, and Mandate only creates a one-time card after the Midnight proof and approves the matching charge. The AI agent only asks; it never sees a card number.
 - **Settlement on Midnight in a stablecoin**, or later in Midnight's shielded tokens, so the payment itself stays confidential too.
 
 Before real money moves, there will be an external review of the contract and the privacy proxy.

@@ -88,6 +88,6 @@ Also: **Live agent** (proof progress), **Supplier view** (what the merchant sees
 
 - Runs on a local Midnight network for the demo; the Wave 2 contract runs on Preprod.
 - Travel providers are simulated and labeled; they are not affiliated with the brands named.
-- Mandate authorizes and proves spending. Moving funds (e.g. a stablecoin) is a later step.
+- Mandate authorizes and proves spending. Moving funds is a later step, either a card rail or a stablecoin on Midnight (see [Business case](BUSINESS.md#the-path-to-real-money)). In both, Mandate never holds funds: on a card rail the agency's money stays at the card-issuing bank, and Mandate only creates a one-time card after the Midnight proof and approves the matching charge.
 - An agency's payments share one contract, so they can be linked to each other (not to a name).
 - This open-source edition has one owner account (no staff roles) and no AI guardrails beyond the human pay gate; run it on your own machine only. The app refuses requests from other websites and from non-local host names.
