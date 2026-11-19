@@ -1,10 +1,18 @@
 # Mandate · Wave 3 walkthrough
 
-An AI agent searches travel providers, books, and pays with a zero-knowledge Mandate proof on a local Midnight network. Over-budget or revoked payments are refused by the contract.
+An AI agent searches travel providers, books, and pays with a zero-knowledge Mandate proof on **Midnight Preprod (ledger 9)**. Over-budget or revoked payments are refused by the contract.
+
+**Already live, nothing to run:** the Wave 3 contract is deployed on Preprod at
+`cca849283f400c5d5f4513a787eac663965fa2901377bcd2664a22ac2d3fecaf`
+([explorer](https://preprod.midnightexplorer.com/contracts/0xcca849283f400c5d5f4513a787eac663965fa2901377bcd2664a22ac2d3fecaf)),
+with a first payment (order `NA-N32AZGI`, $236, proof in block 3481901). The steps below run your own copy.
 
 ## What you need
 
-- Node 22+, Docker, and the Compact toolchain pinned to 0.31.0 (`compact update 0.31.0`) if you want to recompile.
+- Node 22+ and Docker.
+- The Midnight **ledger 9** stack, which Preprod has run since 9 Nov 2026: Compact toolchain 0.36.1 (`compact update 0.36.1`, only to recompile), proof server 9.0.2, Midnight.js 5.0.1 and Wallet SDK 2.0.1 (installed by `npm install`).
+- A free [Blockfrost](https://blockfrost.io) project for **Midnight Preprod** (indexer and node access).
+- A fee wallet seed of your own (`openssl rand -hex 32`), funded with tNIGHT from the [Preprod faucet](https://midnight-tmnight-preprod.nethermind.dev/). Keep the seed private.
 - A Claude API key for the built-in assistant (console.anthropic.com). Optional: Claude Desktop (MCP) or any AI via the REST API.
 - Optional, for Cascade backups: a Lumera testnet wallet (`cd policy && npm install && npm run generate-wallet`, then fund it from the Lumera testnet faucet).
 
@@ -13,34 +21,40 @@ An AI agent searches travel providers, books, and pays with a zero-knowledge Man
 ```bash
 npm install
 cd contract
-npm run compile    # compact compile +0.31.0 (generated artifacts are committed, so this is optional)
+npm run compile    # compact compile +0.36.1 (generated artifacts are committed, so this is optional)
 npm test           # 21 tests, including the 3 order-binding tests
 ```
 
-## 2. Local Midnight network and proof server
+## 2. Proof server and fee wallet
 
 ```bash
-docker compose -f devnet/devnet.yml up -d
-docker run -d --name midnight-proof-server -p 6300:6300 \
-  midnightntwrk/proof-server:8.1.0 -- midnight-proof-server -v
+docker run -d --name midnight-proof-server -p 6300:6300 midnightntwrk/proof-server:9.0.2 -v
+
+cd agent
+cat > .env <<'ENV'
+MN_NETWORK=preprod
+BLOCKFROST_PREPROD_PROJECT_ID=<your Blockfrost Preprod project id>
+FEE_WALLET_SEED=<your 64-hex seed>
+ANTHROPIC_API_KEY=sk-ant-...
+ENV
+npm run wallet:address:preprod   # the mn_addr_preprod1… address to fund from the faucet
+npm run wallet:dust:preprod      # syncs, then registers the tNIGHT to generate DUST (pays the fees)
 ```
 
-The `dev` preset pre-funds the wallet from seed `0x00…01`, which the agent uses as its fee wallet, so no faucet is needed. The devnet starts from an empty chain each time it restarts.
+`.env` stays on your machine and is gitignored. The first wallet sync on Preprod is long (about 2 hours for us); progress is saved every minute, so an interrupted sync resumes. Later starts take about 2 minutes.
 
 ## 3. Deploy and set up a mandate
 
 ```bash
-cd agent
-npm run demo:reset      # deploys if needed, travel limit $500, registers and authorizes the agent
+TRAVEL_LIMIT=500 npm run demo:reset:preprod   # deploys, sets the travel limit, registers and authorizes the agent
 ```
 
-It prints `Ready` with the contract address.
+It prints `Ready` with your contract address. Each setup transaction takes about 20–25 seconds on Preprod.
 
 ## 4. Start the app and API
 
 ```bash
-echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env   # for the built-in assistant; stays on this machine
-npm run serve           # app on http://localhost:4400, REST API under /api/v1
+npm run serve:preprod   # app on http://localhost:4400, REST API under /api/v1 (DEMO_PORT=4500 to change the port)
 ```
 
 Or connect Claude Desktop: `node scripts/install-claude-desktop.mjs`, quit and reopen Claude Desktop, and the `mandate` tools appear (search_travel, book, pay_with_mandate, …).
@@ -86,7 +100,7 @@ Also: **Live agent** (proof progress), **Supplier view** (what the merchant sees
 
 ## Honest limits
 
-- Runs on a local Midnight network for the demo; the Wave 2 contract runs on Preprod.
+- Runs on Midnight Preprod (ledger 9). Preprod moved from ledger 8 to ledger 9 on 9 Nov 2026, mid-wave, so Mandate was migrated (the contract source didn't change) and redeployed. The Wave 2 contract is still on Preprod too.
 - Travel providers are simulated and labeled; they are not affiliated with the brands named.
 - Mandate authorizes and proves spending. Moving funds is a later step, either a card rail or a stablecoin on Midnight (see [Business case](BUSINESS.md#the-path-to-real-money)). In both, Mandate never holds funds: on a card rail the agency's money stays at the card-issuing bank, and Mandate only creates a one-time card after the Midnight proof and approves the matching charge.
 - An agency's payments share one contract, so they can be linked to each other (not to a name).

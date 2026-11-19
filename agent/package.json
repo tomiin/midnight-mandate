@@ -12,27 +12,31 @@
     "demo:reset:preprod": "MN_NETWORK=preprod tsx --env-file-if-exists=.env src/reset.ts",
     "serve": "tsx --env-file-if-exists=.env src/serve.ts",
     "reset-owner": "tsx src/reset-owner.ts",
-    "test": "vitest run test"
+    "test": "vitest run test",
+    "wallet:info:preprod": "MN_NETWORK=preprod tsx --env-file-if-exists=.env src/wallet-cli.ts info",
+    "wallet:dust:preprod": "MN_NETWORK=preprod tsx --env-file-if-exists=.env src/wallet-cli.ts dust",
+    "serve:preprod": "MN_NETWORK=preprod tsx --env-file-if-exists=.env src/serve.ts",
+    "wallet:address:preprod": "MN_NETWORK=preprod tsx --env-file-if-exists=.env src/wallet-address.ts"
   },
   "dependencies": {
-    "@midnight-ntwrk/wallet-sdk": "1.2.0",
-    "@midnight-ntwrk/midnight-js-protocol": "^4.1.1",
-    "@midnight-ntwrk/midnight-js-contracts": "^4.1.1",
-    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "^4.1.1",
-    "@midnight-ntwrk/midnight-js-node-zk-config-provider": "^4.1.1",
-    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "^4.1.1",
-    "@midnight-ntwrk/midnight-js-network-id": "^4.1.1",
-    "@midnight-ntwrk/midnight-js-types": "^4.1.1",
-    "@midnight-ntwrk/compact-js": "2.5.1",
-    "@midnight-ntwrk/compact-runtime": "0.16.0",
-    "@midnight-ntwrk/ledger-v8": "^8.1.0",
-    "rxjs": "^7.8.1",
+    "@midnight-ntwrk/compact-js": "^3.0.2",
+    "@midnight-ntwrk/compact-runtime": "^0.21.0",
+    "@midnight-ntwrk/ledger-v9": "^1.0.2",
+    "@midnight-ntwrk/midnight-js-contracts": "^5.0.1",
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "^5.0.1",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "^5.0.1",
+    "@midnight-ntwrk/midnight-js-node-zk-config-provider": "^5.0.1",
+    "@midnight-ntwrk/midnight-js-protocol": "^5.0.1",
+    "@midnight-ntwrk/midnight-js-types": "^5.0.1",
+    "@midnight-ntwrk/platform-js": "^3.0.0",
+    "@midnight-ntwrk/wallet-sdk": "^2.0.1",
     "@modelcontextprotocol/sdk": "^1.17.0",
+    "rxjs": "^7.8.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/node": "^22.15.29",
     "tsx": "^4.20.0",
-    "vitest": "^3.2.0",
-    "@types/node": "^22.15.29"
+    "vitest": "^3.2.0"
   }
 }

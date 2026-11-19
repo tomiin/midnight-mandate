@@ -11,9 +11,10 @@ import {
   type CircuitContext,
   type CircuitResults,
   type ContractAddress,
-  QueryContext,
+  type ChargedState,
   sampleContractAddress,
   createConstructorContext,
+  createCircuitContext,
   CostModel,
 } from '@midnight-ntwrk/compact-runtime';
 
@@ -36,25 +37,27 @@ export const actorId = (sk: Uint8Array): Uint8Array => pureCircuits.actorId(sk);
 
 export class MandateSimulator {
   readonly contract: Contract<MandatePrivateState>;
-  circuitContext: CircuitContext<MandatePrivateState>;
-  private states: Record<string, MandatePrivateState>;
-  private commitState: (ps: MandatePrivateState) => void;
   readonly address: ContractAddress;
+  private state!: ChargedState;
+  private coinPublicKey: string;
+  private states: Record<string, MandatePrivateState>;
+  private current = 'principal';
 
-  constructor(principalSk: Uint8Array) {
+  private constructor(principalSk: Uint8Array) {
     this.contract = new Contract<MandatePrivateState>(witnesses);
     this.address = sampleContractAddress();
-    const ps = createPrivateState(principalSk);
-    const { currentPrivateState, currentContractState, currentZswapLocalState } =
-      this.contract.initialState(createConstructorContext(ps, hex(principalSk)));
-    this.circuitContext = {
-      currentPrivateState,
-      currentZswapLocalState,
-      currentQueryContext: new QueryContext(currentContractState.data, this.address),
-      costModel: CostModel.initialCostModel(),
-    };
-    this.states = { principal: ps };
-    this.commitState = () => {};
+    this.coinPublicKey = hex(principalSk);
+    this.states = { principal: createPrivateState(principalSk) };
+  }
+
+  /** compact-runtime 0.21: the constructor (initialState) is async, so build through this factory. */
+  static async create(principalSk: Uint8Array): Promise<MandateSimulator> {
+    const sim = new MandateSimulator(principalSk);
+    const { currentPrivateState, currentContractState } =
+      await sim.contract.initialState(createConstructorContext(sim.states.principal, sim.coinPublicKey));
+    sim.state = currentContractState.data;
+    sim.states.principal = currentPrivateState;
+    return sim;
   }
 
   /** Register an actor under a name so `as(name)` can act as them. */
@@ -72,64 +75,74 @@ export class MandateSimulator {
   }
 
   as(name: string): this {
-    const ps = this.states[name];
-    if (!ps) throw new Error(`no actor '${name}'`);
-    this.circuitContext = { ...this.circuitContext, currentPrivateState: ps };
-    this.commitState = (next) => { this.states[name] = next; };
+    if (!this.states[name]) throw new Error(`no actor '${name}'`);
+    this.current = name;
     return this;
   }
 
   getLedger(): Ledger {
-    return ledger(this.circuitContext.currentQueryContext.state);
+    return ledger(this.state);
   }
 
-  private commit<T>(r: CircuitResults<MandatePrivateState, T>): T {
-    this.circuitContext = r.context;
-    this.commitState(r.context.currentPrivateState);
+  // A fresh circuit context per call, built from the current on-chain state and the acting caller's private state.
+  private ctx(circuitId: string): CircuitContext<MandatePrivateState> {
+    return createCircuitContext<MandatePrivateState>({
+      circuitId: circuitId as any,
+      contractAddress: this.address,
+      coinPublicKeyOrZswapState: this.coinPublicKey,
+      contractState: this.state,
+      privateState: this.states[this.current],
+      costModel: CostModel.initialCostModel(),
+    });
+  }
+
+  private async run<T>(circuitId: string, call: (c: CircuitContext<MandatePrivateState>) => Promise<CircuitResults<MandatePrivateState, T>>): Promise<T> {
+    const r = await call(this.ctx(circuitId));
+    this.state = r.context.callContext.currentQueryContext.state;
+    if (r.context.callContext.currentPrivateState) this.states[this.current] = r.context.callContext.currentPrivateState;
     return r.result;
   }
 
   // ---- contract calls ----
-  registerAgent(id: Uint8Array): void {
-    this.commit(this.contract.impureCircuits.registerAgent(this.circuitContext, id));
+  async registerAgent(id: Uint8Array): Promise<void> {
+    await this.run('registerAgent', (c) => this.contract.impureCircuits.registerAgent(c, id));
   }
-  revokeAgent(id: Uint8Array): void {
-    this.commit(this.contract.impureCircuits.revokeAgent(this.circuitContext, id));
+  async revokeAgent(id: Uint8Array): Promise<void> {
+    await this.run('revokeAgent', (c) => this.contract.impureCircuits.revokeAgent(c, id));
   }
-  setCategoryLimit(category: bigint, maxSpend: bigint): void {
-    this.commit(this.contract.impureCircuits.setCategoryLimit(this.circuitContext, category, maxSpend));
+  async setCategoryLimit(category: bigint, maxSpend: bigint): Promise<void> {
+    await this.run('setCategoryLimit', (c) => this.contract.impureCircuits.setCategoryLimit(c, category, maxSpend));
   }
-  advancePeriod(): void {
-    this.commit(this.contract.impureCircuits.advancePeriod(this.circuitContext));
+  async advancePeriod(): Promise<void> {
+    await this.run('advancePeriod', (c) => this.contract.impureCircuits.advancePeriod(c));
   }
-  issueAuthorization(agent: Uint8Array, category: bigint): void {
-    this.commit(this.contract.impureCircuits.issueAuthorization(this.circuitContext, agent, category));
+  async issueAuthorization(agent: Uint8Array, category: bigint): Promise<void> {
+    await this.run('issueAuthorization', (c) => this.contract.impureCircuits.issueAuthorization(c, agent, category));
   }
   /** orderRef defaults to a fresh random reference so older tests keep their meaning. */
-  exercise(category: bigint, amount: bigint, orderRef: Uint8Array = crypto.getRandomValues(new Uint8Array(32))): void {
-    this.commit(this.contract.impureCircuits.exercise(this.circuitContext, category, amount, orderRef));
+  async exercise(category: bigint, amount: bigint, orderRef: Uint8Array = crypto.getRandomValues(new Uint8Array(32))): Promise<void> {
+    await this.run('exercise', (c) => this.contract.impureCircuits.exercise(c, category, amount, orderRef));
   }
-  isAgent(id: Uint8Array): boolean {
-    return this.commit(this.contract.impureCircuits.isAgent(this.circuitContext, id));
+  async isAgent(id: Uint8Array): Promise<boolean> {
+    return this.run('isAgent', (c) => this.contract.impureCircuits.isAgent(c, id));
   }
 }
 
 /** Deploy with a principal, one registered agent, and one configured category. */
-export const deploy = (opts?: { category?: bigint; limit?: bigint }) => {
+export const deploy = async (opts?: { category?: bigint; limit?: bigint }) => {
   const category = opts?.category ?? 1n;
   const limit = opts?.limit ?? 200n;
 
   const principalSk = key('principal');
   const agentSk = key('agent');
 
-  const sim = new MandateSimulator(principalSk);
-  sim.actor('principal', principalSk);
+  const sim = await MandateSimulator.create(principalSk);
   sim.actor('agent', agentSk);
 
   const agentPseudonym = agentId(agentSk);
 
-  sim.as('principal').setCategoryLimit(category, limit);
-  sim.as('principal').registerAgent(agentPseudonym);
+  await sim.as('principal').setCategoryLimit(category, limit);
+  await sim.as('principal').registerAgent(agentPseudonym);
 
   return { sim, category, limit, agentPseudonym, principalSk, agentSk };
 };

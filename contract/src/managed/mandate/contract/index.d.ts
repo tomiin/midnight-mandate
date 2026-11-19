@@ -12,39 +12,39 @@ export type Witnesses<PS> = {
 }
 
 export type ImpureCircuits<PS> = {
-  isAgent(context: __compactRuntime.CircuitContext<PS>, id_0: Uint8Array): __compactRuntime.CircuitResults<PS, boolean>;
+  isAgent(context: __compactRuntime.CircuitContext<PS>, id_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, boolean>>;
   registerAgent(context: __compactRuntime.CircuitContext<PS>,
-                agent_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
-  revokeAgent(context: __compactRuntime.CircuitContext<PS>, agent_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+                agent_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  revokeAgent(context: __compactRuntime.CircuitContext<PS>, agent_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
   setCategoryLimit(context: __compactRuntime.CircuitContext<PS>,
                    category_0: bigint,
-                   maxSpend_0: bigint): __compactRuntime.CircuitResults<PS, []>;
-  advancePeriod(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
+                   maxSpend_0: bigint): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  advancePeriod(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
   issueAuthorization(context: __compactRuntime.CircuitContext<PS>,
                      agent_0: Uint8Array,
-                     category_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+                     category_0: bigint): Promise<__compactRuntime.CircuitResults<PS, []>>;
   exercise(context: __compactRuntime.CircuitContext<PS>,
            category_0: bigint,
            amount_0: bigint,
-           orderRef_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+           orderRef_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
 }
 
 export type ProvableCircuits<PS> = {
-  isAgent(context: __compactRuntime.CircuitContext<PS>, id_0: Uint8Array): __compactRuntime.CircuitResults<PS, boolean>;
+  isAgent(context: __compactRuntime.CircuitContext<PS>, id_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, boolean>>;
   registerAgent(context: __compactRuntime.CircuitContext<PS>,
-                agent_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
-  revokeAgent(context: __compactRuntime.CircuitContext<PS>, agent_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+                agent_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  revokeAgent(context: __compactRuntime.CircuitContext<PS>, agent_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
   setCategoryLimit(context: __compactRuntime.CircuitContext<PS>,
                    category_0: bigint,
-                   maxSpend_0: bigint): __compactRuntime.CircuitResults<PS, []>;
-  advancePeriod(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
+                   maxSpend_0: bigint): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  advancePeriod(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
   issueAuthorization(context: __compactRuntime.CircuitContext<PS>,
                      agent_0: Uint8Array,
-                     category_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+                     category_0: bigint): Promise<__compactRuntime.CircuitResults<PS, []>>;
   exercise(context: __compactRuntime.CircuitContext<PS>,
            category_0: bigint,
            amount_0: bigint,
-           orderRef_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+           orderRef_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
 }
 
 export type PureCircuits = {
@@ -54,26 +54,26 @@ export type PureCircuits = {
 }
 
 export type Circuits<PS> = {
-  agentId(context: __compactRuntime.CircuitContext<PS>, sk_0: Uint8Array): __compactRuntime.CircuitResults<PS, Uint8Array>;
-  actorId(context: __compactRuntime.CircuitContext<PS>, sk_0: Uint8Array): __compactRuntime.CircuitResults<PS, Uint8Array>;
+  agentId(context: __compactRuntime.CircuitContext<PS>, sk_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, Uint8Array>>;
+  actorId(context: __compactRuntime.CircuitContext<PS>, sk_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, Uint8Array>>;
   grantLeaf(context: __compactRuntime.CircuitContext<PS>,
             agent_0: Uint8Array,
-            category_0: bigint): __compactRuntime.CircuitResults<PS, Uint8Array>;
-  isAgent(context: __compactRuntime.CircuitContext<PS>, id_0: Uint8Array): __compactRuntime.CircuitResults<PS, boolean>;
+            category_0: bigint): Promise<__compactRuntime.CircuitResults<PS, Uint8Array>>;
+  isAgent(context: __compactRuntime.CircuitContext<PS>, id_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, boolean>>;
   registerAgent(context: __compactRuntime.CircuitContext<PS>,
-                agent_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
-  revokeAgent(context: __compactRuntime.CircuitContext<PS>, agent_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+                agent_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  revokeAgent(context: __compactRuntime.CircuitContext<PS>, agent_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
   setCategoryLimit(context: __compactRuntime.CircuitContext<PS>,
                    category_0: bigint,
-                   maxSpend_0: bigint): __compactRuntime.CircuitResults<PS, []>;
-  advancePeriod(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
+                   maxSpend_0: bigint): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  advancePeriod(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
   issueAuthorization(context: __compactRuntime.CircuitContext<PS>,
                      agent_0: Uint8Array,
-                     category_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+                     category_0: bigint): Promise<__compactRuntime.CircuitResults<PS, []>>;
   exercise(context: __compactRuntime.CircuitContext<PS>,
            category_0: bigint,
            amount_0: bigint,
-           orderRef_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+           orderRef_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
 }
 
 export type Ledger = {
@@ -127,18 +127,17 @@ export type Ledger = {
   };
 }
 
-export type ContractReferenceLocations = any;
-
-export declare const contractReferenceLocations : ContractReferenceLocations;
-
 export declare class Contract<PS = any, W extends Witnesses<PS> = Witnesses<PS>> {
   witnesses: W;
   circuits: Circuits<PS>;
   impureCircuits: ImpureCircuits<PS>;
   provableCircuits: ProvableCircuits<PS>;
   constructor(witnesses: W);
-  initialState(context: __compactRuntime.ConstructorContext<PS>): __compactRuntime.ConstructorResult<PS>;
+  initialState(context: __compactRuntime.ConstructorContext<PS>): Promise<__compactRuntime.ConstructorResult<PS>>;
 }
 
 export declare function ledger(state: __compactRuntime.StateValue | __compactRuntime.ChargedState): Ledger;
 export declare const pureCircuits: PureCircuits;
+export declare const expectedVk: Record<string, string>;
+export declare const circuitSignatures: __compactRuntime.CircuitSignatures;
+export declare const declaredInterfaces: __compactRuntime.DeclaredInterfaces;

@@ -22,7 +22,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # The Wave 2 replay demo (ui/ + api/) is built on the ledger 8 stack. Since the ledger 9 migration it is no
+      # longer a workspace, so build it from the last commit that had it as one.
       - uses: actions/checkout@v4
+        with:
+          ref: 7d7a8e1
       - uses: actions/setup-node@v4
         with:
           node-version: 22

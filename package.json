@@ -5,8 +5,6 @@
   "description": "Mandate \u2014 privacy-preserving AI agent spending authorization on Midnight. Buildathon Wave 2 submission.",
   "workspaces": [
     "contract",
-    "ui",
-    "api",
     "agent"
   ],
   "engines": {

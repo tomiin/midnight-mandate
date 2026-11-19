@@ -4,7 +4,7 @@
 //              function calling, LangChain, or a company's own agent)
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { ledger } from '../../contract/src/managed/mandate/contract/index.js';
-import { connect, MandateRefused, type Session } from './mandate.js';
+import { connect, MandateRefused, ledgerOf, type Session } from './mandate.js';
 import { net, NETWORK_NAME } from './config.js';
 import {
   PROVIDERS, providerIds, searchFlights, searchHotels, searchTravel, createOrder, getOrder, updateOrder,
@@ -126,10 +126,10 @@ export const ops = {
       const p = await s.pay(o.amount, ref);
       log(`Proof accepted on chain in ${(p.proveAndSubmitMs / 1000).toFixed(1)}s, tx ${p.txId.slice(0, 16)}…`, 'ok');
       // Merchant side: look up ITS OWN order on the public ledger and check the exact amount.
-      const merchantView = indexerPublicDataProvider(net.indexerHttpUrl, net.indexerWsUrl);
+      const merchantView = indexerPublicDataProvider({ queryURL: net.indexerHttpUrl, subscriptionURL: net.indexerWsUrl } as any);
       await merchantView.watchForTxData(p.txId as any);
       const cs = await merchantView.queryContractState(s.contractAddress);
-      const l: any = ledger(cs!.data);
+      const l: any = ledgerOf(cs!);
       const onLedger = l.paidOrders.member(ref) ? Number(l.paidOrders.lookup(ref)) : null;
       const ok = onLedger === o.amount;
       const refHex = Buffer.from(ref).toString('hex');
@@ -285,10 +285,10 @@ export function startServices() {
       const out = (code: number, o: any) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
       if (!/^[0-9a-f]{64,}$/i.test(c) || !/^[0-9a-f]{64}$/.test(ref)) { out(400, { error: 'Bad contract or order reference' }); return true; }
       try {
-        const view = indexerPublicDataProvider(net.indexerHttpUrl, net.indexerWsUrl);
+        const view = indexerPublicDataProvider({ queryURL: net.indexerHttpUrl, subscriptionURL: net.indexerWsUrl } as any);
         const cs = await view.queryContractState(c);
         if (!cs) { out(200, { network: NETWORK_NAME, contract: c, found: false }); return true; }
-        const l: any = ledger(cs.data); const key = new Uint8Array(Buffer.from(ref, 'hex'));
+        const l: any = ledgerOf(cs); const key = new Uint8Array(Buffer.from(ref, 'hex'));
         out(200, { network: NETWORK_NAME, contract: c, found: true, paid: l.paidOrders.member(key) ? Number(l.paidOrders.lookup(key)) : null, checkedAt: Date.now() });
       } catch (e: any) { out(502, { error: `Ledger not reachable: ${String(e.message ?? e).slice(0, 120)}` }); }
       return true;

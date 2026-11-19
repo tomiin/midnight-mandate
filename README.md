@@ -22,6 +22,27 @@ proof on every payment.
 **[Judge walkthrough](docs/WAVE3.md)** ·
 **[Business case](docs/BUSINESS.md)**
 
+### Live on Midnight Preprod (ledger 9)
+
+| | |
+|---|---|
+| **Wave 3 contract** | `cca849283f400c5d5f4513a787eac663965fa2901377bcd2664a22ac2d3fecaf` |
+| **Explorer** | [View on Preprod explorer](https://preprod.midnightexplorer.com/contracts/0xcca849283f400c5d5f4513a787eac663965fa2901377bcd2664a22ac2d3fecaf) |
+| **First payment** | Order `NA-N32AZGI`, $236 flight, paid with a Mandate proof in block 3,481,901 (Nov 18, 2026) |
+| **Order reference** | `ec6b9619ec6231fc648806606eebe70d20fbd6bc6539ce57d8cce25c305b9ab5` = sha256(`mandate:order:v1\|CheapAir (simulated)\|NA-N32AZGI`); the ledger's `paidOrders` maps it to 236 |
+| **Setup on chain** | Travel limit $5,000 · agent registered and authorized |
+| **Stack** | Compact 0.36.1 · Midnight.js 5.0.1 · Wallet SDK 2.0.1 · proof server 9.0.2 · Blockfrost Preprod indexer and RPC |
+
+Preprod moved to ledger 9 on Nov 9, 2026, in the middle of this wave. Mandate was migrated to the ledger 9 stack
+(the contract source didn't change) and redeployed there. To check the payment yourself, run the app on Preprod
+(`npm run serve:preprod`) and open its Verify page for order `NA-N32AZGI` at `CheapAir (simulated)` for $236: it
+recomputes the order reference and reads the public ledger.
+
+<p>
+<img src="docs/screenshots/08-preprod-paid.png" width="49%" alt="Lisbon Weekend trip: $236 CheapAir flight paid with a Mandate proof in Preprod block 3481901">
+<img src="docs/screenshots/09-preprod-verify.png" width="49%" alt="Verify page: the $236 payment for order NA-N32AZGI read from the Preprod ledger">
+</p>
+
 ![The AI booked and paid a $502 flight with a Mandate proof (block 3995); AI view shows it only saw placeholders, never names](docs/screenshots/05-wave3-paid-ai-view.jpg)
 
 *The assistant booked a flight for two and paid it with a Mandate proof on
@@ -191,7 +212,7 @@ because the remote one rejects proofs this size (see below).
 
 ## Running it
 
-> **Running the Wave 3 travel app (Mandate Travel Lite)?** Follow [docs/WAVE3.md](docs/WAVE3.md). This section covers the Wave 2 contract web UI and walkthrough.
+> **Running the Wave 3 travel app (Mandate Travel Lite)?** Follow [docs/WAVE3.md](docs/WAVE3.md) (Preprod, ledger 9). This section covers the Wave 2 contract web UI and walkthrough, built on the ledger 8 stack that Preprod ran until 9 Nov 2026. To run it as it was, check out commit `7d7a8e1` (`git checkout 7d7a8e1`); the `ui/` and `api/` folders on `main` are kept for reference and are not part of the npm workspace any more.
 
 ### What you need
 
@@ -656,18 +677,19 @@ work (Merkle membership + nullifier + a quota check).
 
 ## Build
 
-Compact toolchain pinned to match RxLimit's proven versions (see
-BUILD-LOG.md for the reasoning):
+Compact toolchain 0.36.1 (the ledger 9 toolchain Preprod requires since 9 Nov 2026;
+Waves 1–2 used 0.31.0, see BUILD-LOG.md):
 
 ```
 cd contract
 npm install
-npm run compile      # compact compile +0.31.0 src/mandate.compact src/managed/mandate
+npm run compile      # compact compile +0.36.1 src/mandate.compact src/managed/mandate
 npm test             # vitest, in-memory simulator, no infrastructure needed
 ```
 
 **Compiled clean, first attempt — 7/7 circuits, 18/18 tests passing**
-(2026-09-14, logged in full in BUILD-LOG.md).
+(2026-09-14, logged in full in BUILD-LOG.md). Today: 21/21 tests on compact-runtime 0.21
+(the 3 Wave 3 order-binding tests added; recompiled with 0.36.1, contract source unchanged).
 
 ## Credits
 
