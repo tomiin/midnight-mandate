@@ -241,7 +241,8 @@ code{font:12px ui-monospace,Menlo,monospace}
 </section>
 </main>
 <section class="chat"><div class="chat-resize" id="chat-resize" title="Drag to resize. Double-click to reset."></div>
-  <div class="chat-h"><span class="spark">✦</span><b>Assistant</b><span class="dim" id="chat-model" style="margin-left:auto">Claude</span><span class="chat-size" title="Panel width"><button data-w="320" aria-label="Narrow">S</button><button data-w="420" aria-label="Medium">M</button><button data-w="600" aria-label="Wide">L</button></span><label class="dim" title="Show every message exactly as the AI provider received it" style="display:flex;gap:5px;align-items:center;cursor:pointer;white-space:nowrap"><input type="checkbox" id="ai-view" style="width:auto;margin:0">AI view</label><button class="btn" id="b-newchat" style="padding:4px 10px;font-size:12px">New chat</button></div>
+  <div class="chat-h"><span class="spark">✦</span><b>Assistant</b><span class="dim" id="chat-model" style="margin-left:auto">Claude</span><span class="chat-size" title="Panel width"><button data-w="320" aria-label="Narrow">S</button><button data-w="420" aria-label="Medium">M</button><button data-w="600" aria-label="Wide">L</button></span><label class="dim" title="Show every message exactly as the AI provider received it" style="display:flex;gap:5px;align-items:center;cursor:pointer;white-space:nowrap"><input type="checkbox" id="ai-view" style="width:auto;margin:0">AI view</label><button class="btn" id="b-key" style="padding:4px 10px;font-size:12px" title="Use your own Claude API key">Key</button><button class="btn" id="b-newchat" style="padding:4px 10px;font-size:12px">New chat</button></div>
+  <div class="setup" id="keybox" hidden style="margin:8px 12px"></div>
   <div class="chat-ctx" id="chat-ctx"></div>
   <div class="msgs" id="msgs"></div>
   <div class="sugg" id="sugg"><span>Flights to Lisbon Dec 12 under $250 for the Smith family</span><span>What did we spend today?</span><span>Check the mandate</span><span>Hotels in Lisbon Dec 12 under $150</span></div>
@@ -438,11 +439,22 @@ function showCtx(){const c=ctx();if(!POP)bc?.postMessage({type:'ctx',ctx:c});$('
 function bubble(cls,html,aiText){const d=document.createElement('div');d.className=cls+($('#msgs').classList.contains('aimode')&&aiText!=null?' ai':'');d.innerHTML=aiText!=null?`<div class="real">${html}</div><div class="aiv"><div class="aiv-tag">What the AI received</div>${md(aiText)}</div>`:html;$('#msgs').appendChild(d);$('#msgs').scrollTop=$('#msgs').scrollHeight;return d}
 const hideHist=()=>{};
 function welcome(){$('#msgs').innerHTML='';bubble('msg a',md('Hi. I search every connected provider, book for your clients, and pay with a Mandate proof. Anything over the budget is refused by the contract.\n\n🔒 I never see real names: Mandate swaps clients, travellers and staff for placeholders before anything reaches me. Turn on **AI view** to see exactly what I receive.'))}
-async function chatStatus(){try{const s=await api('/api/chat/status');$('#chat-model').textContent=s.paused?'paused by owner':s.locked?'locked for you':s.ready?s.model:'not connected';
-  if(!s.ready&&!$('#setup'))$('#msgs').insertAdjacentHTML('afterbegin',`<div class="setup" id="setup"><b style="color:var(--text)">Connect Claude</b><br>1. Create an API key at console.anthropic.com.<br>2. Add to <code>agent/.env</code>: <code>ANTHROPIC_API_KEY=sk-ant-...</code><br>3. Send a message. No restart needed. The key stays on this machine.</div>`);if(s.ready)$('#setup')?.remove()}catch{}}
+// Own Claude key: kept in this browser tab only (sessionStorage), sent with each message, never saved by the server.
+const KEY_SLOT='mt-claude-key';const myKey=()=>{try{return sessionStorage.getItem(KEY_SLOT)||''}catch{return ''}};
+function setMyKey(k){try{k?sessionStorage.setItem(KEY_SLOT,k):sessionStorage.removeItem(KEY_SLOT)}catch{}}
+function keyBox(show){const b=$('#keybox');if(show===false||(show===undefined&&!b.hidden)){b.hidden=true;return}
+  b.innerHTML=`<b style="color:var(--text)">Use your own Claude key</b><br>Your messages then run on your own Anthropic account, with no daily limit from this app. Get a key at console.anthropic.com.<br>The key stays in this browser tab and is cleared when you close it. It goes with each message to this server, which passes it to Anthropic and never saves or logs it.${myKey()?'<br><b style="color:var(--text)">A key is in use now.</b>':''}<div class="row" style="margin-top:8px;gap:6px"><input type="password" id="key-in" placeholder="sk-ant-..." autocomplete="off" style="flex:1;min-width:0"><button class="btn pri" id="key-save">Use key</button>${myKey()?'<button class="btn" id="key-del">Remove</button>':''}<button class="btn" id="key-x">Close</button></div><div id="key-msg" style="margin-top:6px"></div>`;
+  b.hidden=false;$('#key-in').focus();
+  $('#key-save').onclick=()=>{const k=$('#key-in').value.trim();if(!/^sk-ant-[A-Za-z0-9_-]{20,300}$/.test(k)){$('#key-msg').textContent='That does not look like a Claude API key. Keys start with sk-ant-.';return}setMyKey(k);keyBox(false);$('#setup')?.remove();chatStatus()};
+  $('#key-in').onkeydown=e=>{if(e.key==='Enter')$('#key-save').click()};
+  if($('#key-del'))$('#key-del').onclick=()=>{setMyKey('');keyBox(false);chatStatus()};$('#key-x').onclick=()=>keyBox(false)}
+$('#b-key').onclick=()=>keyBox();
+async function chatStatus(){try{const s=await api('/api/chat/status');const own=!!myKey();$('#chat-model').textContent=s.paused?'paused by owner':s.locked?'locked for you':own?s.model+' · your key':s.ready?s.model+(s.limit?` · ${s.left} of ${s.limit} left today`:''):'not connected';
+  if(own){$('#setup')?.remove();return}
+  if(!s.ready&&!$('#setup'))$('#msgs').insertAdjacentHTML('afterbegin',`<div class="setup" id="setup"><b style="color:var(--text)">Connect Claude</b><br>1. Create an API key at console.anthropic.com.<br>2. Add to <code>agent/.env</code>: <code>ANTHROPIC_API_KEY=sk-ant-...</code><br>3. Send a message. No restart needed. The key stays on this machine.<br>Or click <b>Key</b> to use your own Claude key.</div>`);if(s.ready)$('#setup')?.remove()}catch{}}
 async function send(text){text=text.trim();if(!text||chatBusy)return;hideHist();keepChat();chatBusy=true;$('#b-send').disabled=true;$('#chat-in').value='';$('#chat-in').style.height='auto';
   const ub=bubble('msg u',md(text));const steps={};let r;
-  try{r=await fetch('/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chatId,text,context:ctx()})});if(r.status===401){location.href='/login';return}}catch(e){bubble('msg err','Mandate server not reachable.');chatBusy=false;$('#b-send').disabled=false;return}
+  try{r=await fetch('/chat',{method:'POST',headers:{'content-type':'application/json',...(myKey()?{'x-claude-key':myKey()}:{})},body:JSON.stringify({chatId,text,context:ctx()})});if(r.status===401){location.href='/login';return}}catch(e){bubble('msg err','Mandate server not reachable.');chatBusy=false;$('#b-send').disabled=false;return}
   const rd=r.body.getReader(),dec=new TextDecoder();let buf='';const thinking=bubble('step','<span class="s"></span>Thinking…');
   for(;;){const {value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
     while((i=buf.indexOf('\n'))>=0){const line=buf.slice(0,i);buf=buf.slice(i+1);if(!line.trim())continue;const ev=JSON.parse(line);thinking.remove();
@@ -450,13 +462,13 @@ async function send(text){text=text.trim();if(!text||chatBusy)return;hideHist();
       if(ev.type==='text')bubble('msg a',md(ev.text),ev.ai);
       if(ev.type==='newclient'){const d=bubble('privacy',`<b>🔒 New clients are added on this machine, not through the AI.</b><br>Nothing was sent to the AI. Check the details and save:<div class="row" style="margin-top:8px"><button class="btn pri">Open New client form</button></div>`);d.querySelector('button').onclick=()=>openClientForm(ev.name,ev.travellers)}
       if(ev.type==='unknown_names'){const d=bubble('privacy',`<b>🔒 ${ev.names.map(esc).join(', ')} ${ev.names.length>1?"aren't clients":"isn't a client"} yet.</b><br>Mandate only sends the AI placeholders for people it knows, so nothing was sent. Add them first, then ask again.<div class="row" style="margin-top:8px"><button class="btn pri">Add as a new client</button></div>`);d.querySelector('button').onclick=()=>{const fam=ev.names.find(n=>/family$/i.test(n));openClientForm(fam||'',ev.names.filter(n=>!/family$/i.test(n)))}}
-      if(ev.type==='error'){bubble('msg err',md(ev.text));chatStatus()}
+      if(ev.type==='error'){const d=bubble('msg err',md(ev.text));if(ev.keyProblem){d.insertAdjacentHTML('beforeend','<div class="row" style="margin-top:8px"><button class="btn">Use my own key</button></div>');d.querySelector('button').onclick=()=>keyBox(true)}chatStatus()}
       if(ev.type==='blocked'){bubble('msg err','<b>⛨ Blocked by Mandate guardrails</b> · '+esc(ev.category)+'<br>'+md(ev.text));secBadge()}
       if(ev.type==='tool'&&ev.state==='run')steps[ev.name]=bubble('step','<span class="s"></span>'+esc(ev.label));
       if(ev.type==='tool'&&ev.state!=='run'){const el=steps[ev.name];if(el){el.className='step '+ev.state;el.innerHTML='<span class="s"></span>'+esc(el.textContent)+(ev.summary?' · '+esc(ev.summary):'')}
         if(ev.data&&ev.data.length)bubble('offers',ev.data.slice(0,5).map(o=>`<div><span>${esc(o.hotel||((o.carrier||'')+' '+(o.depart||'')))}<span class="dim"> · ${esc(clean(o.provider))}</span></span><span class="p">$${esc(o.priceUsd)}</span></div>`).join(''))}
       $('#msgs').scrollTop=$('#msgs').scrollHeight}}
-  thinking.remove();chatBusy=false;$('#b-send').disabled=false;$('#chat-in').focus();loadCrm();refreshState();if(POP)bc?.postMessage({type:'refresh'})}
+  thinking.remove();chatBusy=false;$('#b-send').disabled=false;$('#chat-in').focus();chatStatus();loadCrm();refreshState();if(POP)bc?.postMessage({type:'refresh'})}
 $('#b-send').onclick=()=>send($('#chat-in').value);
 $('#chat-in').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send($('#chat-in').value)}});
 $('#chat-in').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(140,e.target.scrollHeight)+'px'});

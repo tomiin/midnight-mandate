@@ -41,7 +41,9 @@ npm run wallet:address:preprod   # the mn_addr_preprod1… address to fund from 
 npm run wallet:dust:preprod      # syncs, then registers the tNIGHT to generate DUST (pays the fees)
 ```
 
-`.env` stays on your machine and is gitignored. The first wallet sync on Preprod is long (about 2 hours for us); progress is saved every minute, so an interrupted sync resumes. Later starts take about 2 minutes.
+`.env` stays on your machine and is gitignored. Optional: `MANDATE_CHAT_DAILY_LIMIT=30` sets how many assistant messages each signed-in person can send per day on your key (default 30, `0` = no limit). Anyone can click **Key** in the chat panel to use their own Claude API key instead: it stays in their browser tab, is passed to Anthropic with each message, is never saved by the server, and doesn't count toward the limit.
+
+The first wallet sync on Preprod is long (about 2 hours for us); progress is saved every minute, so an interrupted sync resumes. Later starts take about 2 minutes.
 
 ## 3. Deploy and set up a mandate
 

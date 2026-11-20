@@ -200,7 +200,7 @@ export function startServices() {
     if (method === 'POST' && route === '/v1/orders') return ops.book(String(body?.offerId), body?.client, who, body?.tripId);
     const m = route.match(/^\/v1\/orders\/([^/]+)\/(pay|cancel)$/);
     if (method === 'POST' && m) return m[2] === 'pay' ? ops.pay(m[1], who) : ops.cancel(m[1], who);
-    if (method === 'GET' && route === '/chat/status') return { ...chatStatus(), paused: false, locked: false };
+    if (method === 'GET' && route === '/chat/status') return { ...chatStatus(me?.id), paused: false, locked: false };
     // ---------- encrypted backups on Lumera Cascade (owner) ----------
     if (route.startsWith('/backup')) {
       if (!me) throw new Error('Sign in first.');
