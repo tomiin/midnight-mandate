@@ -107,7 +107,8 @@ export function installConsoleRedaction() {
 // True when a request came from this machine directly, not through the tunnel or a proxy.
 export function fromThisMachine(req: IncomingMessage) {
   const a = String(req.socket.remoteAddress ?? '').replace(/^::ffff:/, '');
-  return isLoopback(a) && !req.headers['cf-connecting-ip'] && !req.headers['x-forwarded-for'];
+  // Tailscale Funnel sets X-Forwarded-For and marks public traffic with Tailscale-Funnel-Request.
+  return isLoopback(a) && !req.headers['cf-connecting-ip'] && !req.headers['x-forwarded-for'] && !req.headers['tailscale-funnel-request'];
 }
 
 // Sliding-window rate limit (in memory): at most `limit` hits per `windowMs` for a key.

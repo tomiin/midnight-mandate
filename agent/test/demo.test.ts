@@ -129,5 +129,6 @@ describe('demo: hardening', () => {
     expect(fromThisMachine(r('127.0.0.1', { 'cf-connecting-ip': '198.51.100.7' }))).toBe(false);
     expect(fromThisMachine(r('127.0.0.1', { 'x-forwarded-for': '1.2.3.4' }))).toBe(false);
     expect(fromThisMachine(r('10.0.0.9'))).toBe(false);
+    expect(fromThisMachine(r('127.0.0.1', { 'tailscale-funnel-request': '?1' }))).toBe(false);
   });
 });
