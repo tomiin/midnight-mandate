@@ -427,7 +427,24 @@ $('#b-revoke').onclick=()=>confirm('Revoke the booking agent? Its next payment w
 $('#b-limit').onclick=()=>act('/limit',{amount:$('#i-limit').value});$('#b-refresh').onclick=loadPublic;
 $('#q').addEventListener('input',()=>{if(location.hash!=='#clients')location.hash='#clients';renderClients()});
 $('#b-logout').onclick=async e=>{e.preventDefault();await fetch('/api/auth/logout',{method:'POST'});location.href='/login'};
-async function loadMe(){const rr=await fetch('/api/auth/state');if(!rr.ok){document.body.innerHTML='<div style="padding:48px;font:16px system-ui;color:#0F2E33"><b>Mandate Travel was updated.</b><br>Quit Claude Desktop (Cmd+Q) and reopen it to load the new server, then reload this page.</div>';return}const s=await rr.json();if(!s.user){location.href='/login';return}st.me=s.user;st.team=s.team;
+// ---------- hosted demo: banner + connect your own agent ----------
+function demoBar(u){if($('#demobar'))return;
+  document.body.insertAdjacentHTML('beforeend',`<div id="demobar" style="position:fixed;left:12px;bottom:12px;z-index:60;max-width:380px;padding:12px 14px;border-radius:12px;background:#0F2E33;color:#fff;font:13px/1.45 system-ui;box-shadow:0 6px 24px rgba(0,0,0,.18)">
+  <b>Live demo · Midnight Preprod</b> <button id="demo-x" aria-label="Hide" style="float:right;background:none;border:0;color:#fff;cursor:pointer;font-size:15px">×</button><br>
+  Test money and simulated suppliers. Shared with other visitors and reset every night. Please don't enter real personal data.${u.role==='guest'?` You're signed in as ${esc(u.name)} for 4 hours.`:''}
+  <div style="margin-top:8px"><button class="btn" id="demo-agent" style="padding:4px 10px;font-size:12px">Connect your own agent</button></div></div>
+  <dialog id="demo-dlg" style="max-width:520px;border:0;border-radius:14px;padding:20px;font:14px/1.5 system-ui"></dialog>`);
+  $('#demo-x').onclick=()=>$('#demobar').remove();
+  $('#demo-agent').onclick=async()=>{const d=$('#demo-dlg');
+    try{const k=await api('/api/demo/apikey',{method:'POST'});const spec=location.origin+k.openapi;
+      d.innerHTML=`<b>Connect your own agent</b><p>Any agent that can call a REST API (ChatGPT custom actions, OpenAI or Gemini function calling, LangChain) can search, book and pay here. The Mandate contract still enforces the budget.</p>
+      <p><b>1. API spec</b><br><code style="word-break:break-all">${esc(spec)}</code></p>
+      <p><b>2. Your API key</b> (shown once, expires in 24 hours, same limits as your guest session)<br><code id="demo-key" style="word-break:break-all">${esc(k.key)}</code></p>
+      <p><b>3. Send it as a header</b><br><code>Authorization: Bearer &lt;key&gt;</code></p>
+      <div class="row" style="gap:8px"><button class="btn pri" id="demo-copy">Copy key</button><button class="btn" id="demo-close">Close</button></div>`;
+      d.showModal();$('#demo-copy').onclick=()=>navigator.clipboard?.writeText(k.key).then(()=>$('#demo-copy').textContent='Copied');$('#demo-close').onclick=()=>d.close()}
+    catch(e){alert(e.message)}}}
+async function loadMe(){const rr=await fetch('/api/auth/state');if(!rr.ok){document.body.innerHTML='<div style="padding:48px;font:16px system-ui;color:#0F2E33"><b>Mandate Travel was updated.</b><br>Quit Claude Desktop (Cmd+Q) and reopen it to load the new server, then reload this page.</div>';return}const s=await rr.json();if(!s.user){location.href='/login';return}st.me=s.user;st.team=s.team;if(s.demo)demoBar(s.user);
   $('#me-name').textContent=s.user.name;$('#me-av').textContent=s.user.name.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();renderAll()}
 // ---------- assistant ----------
 const newId=()=>'c'+Date.now()+Math.random().toString(36).slice(2,6);

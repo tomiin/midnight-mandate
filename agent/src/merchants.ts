@@ -214,7 +214,8 @@ export function startHub(port = PORT, extra?: () => any, api?: Api, raw?: Raw) {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(page());
   });
   server.on('error', (e: any) => console.error(`[hub] ${e.code === 'EADDRINUSE' ? `page already running on ${port}; forwarding events to it` : e.message}`));
-  server.listen(port, '127.0.0.1', () => {
+  // LISTEN_HOST=0.0.0.0 only inside a container behind a reverse proxy (hosted demo). Default: this machine only.
+  server.listen(port, process.env.LISTEN_HOST ?? '127.0.0.1', () => {
     ownsPage = true; loadRecords(); console.error(`[hub] live demo page: http://localhost:${port}`);
     // Also answer on IPv6 loopback so both "localhost" and "127.0.0.1" work in every browser.
     const v6 = createServer((rq, rs) => server.emit('request', rq, rs));

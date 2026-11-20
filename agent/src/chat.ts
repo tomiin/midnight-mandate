@@ -15,6 +15,7 @@ import { Proxy, newClientIntent } from './privacy.js';
 import { appendFileSync, mkdirSync, writeFileSync, renameSync } from 'fs';
 import { createHash } from 'crypto';
 import { emit } from './merchants.js';
+import { DEMO, LIMITS, clientIp, counters } from './demo.js';
 
 const ENV_FILE = resolve(dirname(fileURLToPath(import.meta.url)), '../.env');
 // Read on every request so adding the key to .env works without a restart.
@@ -90,7 +91,7 @@ const LABEL: Record<string, (i: any) => string> = {
   get_activity: (i) => `Reading activity${i.client ? ` for ${i.client}` : ''}${i.date ? ` on ${i.date}` : ''}`,
 };
 
-async function runTool(name: string, i: any, actor: string, userText = ''): Promise<any> {
+async function runTool(name: string, i: any, actor: string, userText = '', guestId?: string): Promise<any> {
   switch (name) {
     case 'search_travel': {
       const r: any = ops.searchTravel(String(i.query ?? ''));
@@ -107,7 +108,7 @@ async function runTool(name: string, i: any, actor: string, userText = ''): Prom
       // Human gate: money only moves if the person said so in this very message, so text injected
       // into search results or a supplier page can never trigger a payment on its own.
       if (!confirmsPayment(userText)) return { error: 'Payment needs the user\'s explicit go-ahead in their latest message (for example "yes, pay"). Show the booking and total, ask, and wait.' };
-      return ops.pay(String(i.orderId), actor);
+      return ops.pay(String(i.orderId), actor, guestId);
     case 'cancel_order': return ops.cancel(String(i.orderId), actor);
     case 'list_orders': return ops.listOrders();
     case 'mandate_status': return ops.status();
@@ -150,7 +151,7 @@ const wrapToolResult = (name: string, out: unknown) => `<tool_data source="${nam
 export function chatStatus(uid?: string) { return { ready: !!apiKey(), model: model(), ownKeyAllowed: true, ...quota(uid ?? 'anon') }; }
 
 export async function handleChat(req: IncomingMessage, res: ServerResponse, user?: { id?: string; name: string; role: string }) {
-  const actor = user ? `${user.name} (${user.role === 'owner' ? 'owner' : 'staff'}) via Assistant` : 'Assistant';
+  const actor = user ? `${user.name} (${user.role === 'owner' ? 'owner' : user.role === 'guest' ? 'demo guest' : 'staff'}) via Assistant` : 'Assistant';
   let raw = ''; for await (const c of req) raw += c;
   let body: any = {}; try { body = JSON.parse(raw || '{}'); } catch {}
   res.writeHead(200, { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-cache' });
@@ -180,6 +181,8 @@ export async function handleChat(req: IncomingMessage, res: ServerResponse, user
   if (!own) {
     const q = quota(who.id);
     if (q.limit && q.left === 0) { send({ type: 'error', text: `You've used today's ${q.limit} assistant messages on the agency's Claude account. Click **Key** to keep going with your own Claude API key, or try again tomorrow.`, keyProblem: true }); return end(); }
+    // Demo: also a daily limit per IP address, so starting a new guest session doesn't reset it.
+    if (DEMO && !counters.take(`chatip:${clientIp(req)}`, LIMITS.chatPerIp)) { send({ type: 'error', text: `This network has used today's ${LIMITS.chatPerIp} demo assistant messages. Click **Key** to keep going with your own Claude API key, or try again tomorrow.`, keyProblem: true }); return end(); }
     countMessage(who.id);
   }
   const msgs = chats.get(id) ?? []; chats.set(id, msgs);
@@ -216,7 +219,7 @@ export async function handleChat(req: IncomingMessage, res: ServerResponse, user
         send({ type: 'tool', name: c.name, label: (LABEL[c.name] ?? ((x: any) => c.name))(realInput), state: 'run', ai: JSON.stringify(c.input ?? {}) });
         let out: any;
         try {
-          out = await runTool(c.name, realInput, actor, text);
+          out = await runTool(c.name, realInput, actor, text, user?.role === 'guest' ? who.id : undefined);
         } catch (e: any) { out = { error: String(e.message ?? e).slice(0, 400) }; }
         const ok = !out?.error && out?.status !== 'refused';
         send({ type: 'tool', name: c.name, state: ok ? 'ok' : 'bad', summary: summarize(c.name, out), data: c.name === 'search_travel' ? out?.results : undefined });

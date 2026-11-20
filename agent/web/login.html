@@ -32,6 +32,7 @@ button{width:100%;margin-top:20px;font:inherit;font-weight:600;padding:11px;bord
     <label for="p">Password</label><input id="p" type="password" autocomplete="current-password" required>
     <div id="codeRow" style="display:none"><label for="c">6-digit code from your authenticator app</label><input id="c" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>
     <button id="b">Sign in</button>
+    <div id="demoRow" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #E3ECEC"><button type="button" id="g" style="background:#fff;color:#0F2E33;border:1px solid #0F2E33">Try the demo</button><div class="note" style="margin-top:8px">No sign-up. You get a 4-hour guest session on Midnight Preprod, the public test network, with test money and simulated suppliers. The demo is shared with other visitors and reset every night, so please don't enter real personal data.</div></div>
     <div class="err" id="e"></div>
     <div class="note" id="n">Sign-ins are recorded in the agency's private activity log.</div>
     <details class="note" id="forgot" style="margin-top:8px"><summary style="cursor:pointer">Forgot your password?</summary>On the computer that runs Mandate Travel, open Terminal in the <code>agent</code> folder and run <code>npm run reset-owner</code>, then restart the app.</details>
@@ -40,9 +41,13 @@ button{width:100%;margin-top:20px;font:inherit;font-weight:600;padding:11px;bord
 <script>
 const $=s=>document.querySelector(s);let setup=false;
 fetch('/api/auth/state').then(r=>r.json()).then(s=>{if(s.user){location.href='/';return}
+  if(s.demo){$('#demoRow').style.display='block';$('#forgot').style.display='none';$('#u').required=false;$('#p').required=false}
   if(s.setupNeeded){setup=true;$('#t').textContent='Set up the owner account';$('#s').textContent='First run. This account controls the mandate and the team.';$('#nameRow').style.display='block';$('#name').required=true;$('#p').autocomplete='new-password';$('#b').textContent='Create account';$('#n').textContent='Use a password of at least 12 characters. It is stored only as a hash on this machine.';$('#forgot').style.display='none'}});
 $('#f').onsubmit=async e=>{e.preventDefault();$('#e').textContent='';$('#b').disabled=true;
   try{const r=await fetch(setup?'/api/auth/setup':'/api/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:$('#name').value,username:$('#u').value,password:$('#p').value,code:$('#c').value})});
     const j=await r.json();if(j.needsCode){$('#codeRow').style.display='block';$('#c').focus()}if(!r.ok)throw new Error(j.error||'Sign-in failed');location.href='/'}
   catch(err){$('#e').textContent=err.message}finally{$('#b').disabled=false}};
+$('#g').onclick=async()=>{$('#e').textContent='';$('#g').disabled=true;
+  try{const r=await fetch('/api/auth/guest',{method:'POST'});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Could not start the demo');location.href='/'}
+  catch(err){$('#e').textContent=err.message}finally{$('#g').disabled=false}};
 </script></body></html>

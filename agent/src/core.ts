@@ -23,6 +23,7 @@ const webDir = resolve(dirname(fileURLToPath(import.meta.url)), '../web');
 import { existsSync, readFileSync } from 'fs';
 import { STATE_PATH } from './config.js';
 import { orderRefOf, budgetCheck, payBlockReason } from './rules.js';
+import { DEMO, PUBLIC_HOST, hostAllowed, apiKeyOf, issueApiKey, guestPayCheck, onWallet, walletQueueLength } from './demo.js';
 export { orderRefOf };
 const savedContract = () => { try { return existsSync(STATE_PATH) ? JSON.parse(readFileSync(STATE_PATH, 'utf8')).contract : undefined; } catch { return undefined; } };
 
@@ -111,9 +112,17 @@ export const ops = {
     emit('budget', { limit: st.travelLimit, period: st.period }); emit('agent', { active: st.agentActive });
     return { ...st, network: NETWORK_NAME, note: 'Who the agent works for is never on the ledger.' };
   },
-  async pay(orderId: string, actor = 'AI agent') {
-    const o = getOrder(orderId);
-    if (!o) return { error: `No order ${orderId}` };
+  // guestId: set for demo guests (and their API keys), who have daily payment limits.
+  async pay(orderId: string, actor = 'AI agent', guestId?: string) {
+    const first = getOrder(orderId);
+    if (!first) return { error: `No order ${orderId}` };
+    const why = payBlockReason(first);
+    if (why) return { error: why, ...(first.status === 'paid' ? { txId: first.txId } : {}) };
+    if (DEMO && guestId) { const lim = guestPayCheck(guestId); if (lim) return { error: lim }; }
+    if (walletQueueLength()) log(`${first.id} is waiting for the wallet (${walletQueueLength()} ahead)…`);
+    return onWallet(async () => {
+    // Check again: the order may have been paid or cancelled while this payment waited in line.
+    const o = getOrder(orderId)!;
     const blocked = payBlockReason(o);
     if (blocked) return { error: blocked, ...(o.status === 'paid' ? { txId: o.txId } : {}) };
     const s = await getSession();
@@ -149,6 +158,7 @@ export const ops = {
       log(`Payment error: ${String(e.message ?? e).slice(0, 200)}`, 'bad');
       return { orderId: o.id, status: 'error', error: String(e.message ?? e).slice(0, 500) };
     }
+    });
   },
 };
 
@@ -160,7 +170,7 @@ async function principalAction(label: string, fn: (s: Session) => Promise<any>, 
   try {
     const s = await getSession();
     log(`Agency console: ${label}… (signing as principal, generating proof)`, 'proof');
-    const t = Date.now(); const r = await fn(s);
+    const t = Date.now(); const r = await onWallet(() => fn(s));
     const st = await s.publicState();
     emit('budget', { limit: st.travelLimit, period: st.period }); emit('agent', { active: st.agentActive });
     audit(actor, 'changed mandate', `${label} · confirmed on chain`);
@@ -190,7 +200,13 @@ export function startServices() {
       return principalAction(`set travel limit to $${n}`, (s) => s.principal.setTravelLimit(n), who);
     }
     // agent REST API (v1)
-    if (method === 'GET' && route === '/v1/openapi.json') return openapi;
+    if (method === 'GET' && route === '/v1/openapi.json') {
+      // Point external agents at the address they actually reach (the public host in demo mode).
+      const url = DEMO && PUBLIC_HOST ? `https://${PUBLIC_HOST}/api` : `http://localhost:${process.env.DEMO_PORT ?? '4400'}/api`;
+      const o: any = { ...openapi, servers: [{ url }] };
+      if (DEMO) o.components = { securitySchemes: { mandateKey: { type: 'http', scheme: 'bearer', description: 'Demo API key (starts with mtk_). Get one in the demo app: Connect your own agent. Expires after 24 hours.' } } };
+      return o;
+    }
     if (method === 'GET' && route === '/v1/merchants') return ops.listMerchants();
     if (method === 'GET' && route === '/v1/search') return ops.searchTravel(String(q('q') ?? ''));
     if (method === 'GET' && route === '/v1/flights') return ops.searchFlights(String(q('provider')), String(q('destination')), String(q('date')));
@@ -199,7 +215,15 @@ export function startServices() {
     if (method === 'GET' && route === '/v1/orders') return ops.listOrders();
     if (method === 'POST' && route === '/v1/orders') return ops.book(String(body?.offerId), body?.client, who, body?.tripId);
     const m = route.match(/^\/v1\/orders\/([^/]+)\/(pay|cancel)$/);
-    if (method === 'POST' && m) return m[2] === 'pay' ? ops.pay(m[1], who) : ops.cancel(m[1], who);
+    const guestId = me?.role === 'guest' ? me.id : (req as any).apiKey?.guestId;
+    if (method === 'POST' && m) return m[2] === 'pay' ? ops.pay(m[1], who, guestId) : ops.cancel(m[1], who);
+    // Demo: a guest gets a REST API key to connect their own agent (ChatGPT actions, LangChain, ...).
+    if (method === 'POST' && route === '/demo/apikey') {
+      if (!DEMO) throw new Error('not found: POST /demo/apikey');
+      if (!me) throw new Error('Sign in first.');
+      const k = issueApiKey(me.id, me.name); audit(label(me), 'issued demo API key', `expires ${new Date(k.expiresAt).toISOString()}`);
+      return { ...k, openapi: '/api/v1/openapi.json', header: 'Authorization: Bearer <key>' };
+    }
     if (method === 'GET' && route === '/chat/status') return { ...chatStatus(me?.id), paused: false, locked: false };
     // ---------- encrypted backups on Lumera Cascade (owner) ----------
     if (route.startsWith('/backup')) {
@@ -269,7 +293,8 @@ export function startServices() {
     res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     // Only answer to this machine's own names: blocks DNS-rebinding attacks from malicious web pages.
     const port = process.env.DEMO_PORT ?? '4400';
-    if (![`localhost:${port}`, `127.0.0.1:${port}`, `[::1]:${port}`].includes(String(req.headers.host ?? ''))) { res.writeHead(421); res.end('Misdirected request'); return true; }
+    // In demo mode the public host name (PUBLIC_HOST) is allowed too.
+    if (!hostAllowed(req.headers.host, port)) { res.writeHead(421); res.end('Misdirected request'); return true; }
     // Refuse state-changing requests that come from another website (cross-site request forgery).
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       const o = req.headers.origin; const sfs = req.headers['sec-fetch-site'];
@@ -294,9 +319,19 @@ export function startServices() {
       return true;
     }
     // Machine routes stay open on this machine: other AI clients (REST) and the MCP copies forwarding events.
-    if (url === '/ingest') return false;
+    // In demo mode only the server itself may post events (not anything coming through the proxy).
+    if (url === '/ingest') {
+      const local = /^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/.test(String(req.socket.remoteAddress ?? ''));
+      if (DEMO && (!local || req.headers['x-forwarded-for'])) { res.writeHead(403); res.end(); return true; }
+      return false;
+    }
     // Other AI clients use the REST API on this machine. (The full edition requires owner-issued API keys.)
-    if (url.startsWith('/api/v1/')) return false;
+    // In demo mode: the spec is public; everything else needs a signed-in session or a guest's API key.
+    if (url.startsWith('/api/v1/')) {
+      if (!DEMO || url === '/api/v1/openapi.json' || userOf(req)) return false;
+      const k = apiKeyOf(req); if (k) { (req as any).apiKey = k; return false; }
+      res.writeHead(401, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'Demo REST API: sign in, or send "Authorization: Bearer <key>" with a key from Connect your own agent.' })); return true;
+    }
     const me = userOf(req);
     if (!me) {
       if (url.startsWith('/api/') || url === '/events' || url === '/state' || url === '/chat') { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"Sign in first."}'); }
