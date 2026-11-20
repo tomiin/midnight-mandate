@@ -432,9 +432,11 @@ function demoBar(u){if($('#demobar'))return;
   document.body.insertAdjacentHTML('beforeend',`<div id="demobar" style="position:fixed;left:12px;bottom:12px;z-index:60;max-width:380px;padding:12px 14px;border-radius:12px;background:#0F2E33;color:#fff;font:13px/1.45 system-ui;box-shadow:0 6px 24px rgba(0,0,0,.18)">
   <b>Live demo · Midnight Preprod</b> <button id="demo-x" aria-label="Hide" style="float:right;background:none;border:0;color:#fff;cursor:pointer;font-size:15px">×</button><br>
   Test money and simulated suppliers. Shared with other visitors and reset every night. Please don't enter real personal data.${u.role==='guest'?` You're signed in as ${esc(u.name)} for 4 hours.`:''}
-  <div style="margin-top:8px"><button class="btn" id="demo-agent" style="padding:4px 10px;font-size:12px">Connect your own agent</button></div></div>
+  <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn" id="demo-agent" style="padding:4px 10px;font-size:12px">Connect your own agent</button>${u.role==='owner'?'<button class="btn" id="demo-reset" style="padding:4px 10px;font-size:12px">Reset demo now</button>':''}</div></div>
   <dialog id="demo-dlg" style="max-width:520px;border:0;border-radius:14px;padding:20px;font:14px/1.5 system-ui"></dialog>`);
   $('#demo-x').onclick=()=>$('#demobar').remove();
+  if($('#demo-reset'))$('#demo-reset').onclick=async()=>{if(!confirm('Reset the public demo now? Clients, trips and unpaid orders go back to the clean sample set, chats are cleared, and a new budget period starts on chain (about 20 seconds).'))return;$('#demo-reset').disabled=true;$('#demo-reset').textContent='Resetting…';
+    try{const r=await api('/api/demo/reset',{method:'POST'});alert(`Demo reset. Budget period ${r.period}. Kept: ${r.kept.join(', ')||'none'}.`);location.reload()}catch(e){alert(e.message);$('#demo-reset').disabled=false;$('#demo-reset').textContent='Reset demo now'}};
   $('#demo-agent').onclick=async()=>{const d=$('#demo-dlg');
     try{const k=await api('/api/demo/apikey',{method:'POST'});const spec=location.origin+k.openapi;
       d.innerHTML=`<b>Connect your own agent</b><p>Any agent that can call a REST API (ChatGPT custom actions, OpenAI or Gemini function calling, LangChain) can search, book and pay here. The Mandate contract still enforces the budget.</p>

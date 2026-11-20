@@ -133,6 +133,15 @@ export function sanitizeInput(v: any, depth = 0): any {
   return v;
 }
 
+// ---------- nightly reset ----------
+export const RESET_HOUR = Math.min(23, num('DEMO_RESET_HOUR', 3)); // local time on the host machine
+// Milliseconds from `now` until the next `hour`:00 local time (tomorrow if that time has passed today).
+export function msUntilHour(hour: number, now = new Date()) {
+  const next = new Date(now); next.setHours(hour, 0, 0, 0);
+  if (next.getTime() <= now.getTime()) next.setDate(next.getDate() + 1);
+  return next.getTime() - now.getTime();
+}
+
 // ---------- guest REST API keys ----------
 // Shown once to the guest; only a hash is kept, in memory. Expire after LIMITS.apiKeyHours.
 const apiKeys = new Map<string, { guestId: string; name: string; exp: number }>();

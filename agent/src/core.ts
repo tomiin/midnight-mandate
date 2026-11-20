@@ -8,10 +8,10 @@ import { connect, MandateRefused, ledgerOf, type Session } from './mandate.js';
 import { net, NETWORK_NAME } from './config.js';
 import {
   PROVIDERS, providerIds, searchFlights, searchHotels, searchTravel, createOrder, getOrder, updateOrder,
-  findFare, findRoom, log, emit, startHub, destinations, openOrders,
+  findFare, findRoom, log, emit, startHub, destinations, openOrders, resetRecords,
 } from './merchants.js';
 import { openapi } from './openapi.js';
-import { handleChat, chatStatus } from './chat.js';
+import { handleChat, chatStatus, clearChats } from './chat.js';
 import { authRoutes, userOf, label, audit } from './auth.js';
 import * as crm from './crm.js';
 import * as backup from './backup.js';
@@ -23,7 +23,7 @@ const webDir = resolve(dirname(fileURLToPath(import.meta.url)), '../web');
 import { existsSync, readFileSync } from 'fs';
 import { STATE_PATH } from './config.js';
 import { orderRefOf, budgetCheck, payBlockReason } from './rules.js';
-import { redact, rateOk, RATE, clientIp, fromThisMachine } from './demo.js';
+import { redact, rateOk, RATE, clientIp, fromThisMachine, RESET_HOUR, msUntilHour } from './demo.js';
 import { DEMO, PUBLIC_HOST, hostAllowed, apiKeyOf, issueApiKey, guestPayCheck, onWallet, walletQueueLength } from './demo.js';
 export { orderRefOf };
 const savedContract = () => { try { return existsSync(STATE_PATH) ? JSON.parse(readFileSync(STATE_PATH, 'utf8')).contract : undefined; } catch { return undefined; } };
@@ -181,9 +181,34 @@ async function principalAction(label: string, fn: (s: Session) => Promise<any>, 
   finally { busy = false; }
 }
 
+// ---------- demo: nightly reset ----------
+// Restores the clean sample data (data/demo-seed-<network>.json), keeps the listed real payments, forgets
+// chats and the live feed, then starts a new budget period on the SAME contract (no redeploy).
+const SEED_FILE = resolve(dirname(fileURLToPath(import.meta.url)), `../data/demo-seed-${NETWORK_NAME}.json`);
+export async function demoReset(by = 'Nightly demo reset') {
+  const seed = existsSync(SEED_FILE) ? JSON.parse(readFileSync(SEED_FILE, 'utf8')) : null;
+  if (!seed?.crm) throw new Error(`No demo seed file (data/demo-seed-${NETWORK_NAME}.json).`);
+  const keep: string[] = Array.isArray(seed.keepOrders) ? seed.keepOrders.map(String) : [];
+  crm.replaceAll(seed.crm); resetRecords(keep); clearChats();
+  audit(by, 'demo data reset', `${seed.crm.clients?.length ?? 0} client(s), ${seed.crm.trips?.length ?? 0} trip(s); kept ${keep.join(', ') || 'no'} orders`);
+  log('Demo reset: clean sample data restored.', 'ok');
+  const r = await principalAction('start a new budget period (demo reset)', (s) => s.principal.advancePeriod(), by);
+  return { ok: true, period: r.state.period, kept: keep };
+}
+function scheduleDemoReset() {
+  const wait = msUntilHour(RESET_HOUR);
+  console.error(`[demo] next nightly reset: ${new Date(Date.now() + wait).toLocaleString()}`);
+  setTimeout(async () => {
+    try { const r = await demoReset(); console.error(`[demo] reset done, budget period ${r.period}`); }
+    catch (e: any) { log(`Demo reset failed: ${redact(e.message ?? e).slice(0, 160)}`, 'bad'); }
+    scheduleDemoReset();
+  }, wait);
+}
+
 // ---------- local hub: web app + REST API for any AI ----------
 export function startServices() {
   getSession().catch((e) => log(`Mandate not ready: ${e.message}`, 'bad')); // warm up
+  if (DEMO) scheduleDemoReset();
   startHub(undefined, () => ({ network: NETWORK_NAME, contract: session?.contractAddress ?? savedContract() }), async (method, path, body, req) => {
     const me = userOf(req); const who = me ? label(me) : (req as any).apiKey ? `API key "${(req as any).apiKey.name}"` : 'API client (REST)';
     const ownerOnly = () => { if (!me || me.role !== 'owner') throw new Error('Only the agency owner can change the mandate.'); };
@@ -218,6 +243,13 @@ export function startServices() {
     const m = route.match(/^\/v1\/orders\/([^/]+)\/(pay|cancel)$/);
     const guestId = me?.role === 'guest' ? me.id : (req as any).apiKey?.guestId;
     if (method === 'POST' && m) return m[2] === 'pay' ? ops.pay(m[1], who, guestId) : ops.cancel(m[1], who);
+    // Demo: the owner can run the nightly reset now, from the host machine only.
+    if (method === 'POST' && route === '/demo/reset') {
+      if (!DEMO) throw new Error('not found: POST /demo/reset');
+      ownerOnly();
+      if (!fromThisMachine(req)) throw new Error('Run the reset on the host machine (http://localhost).');
+      return demoReset(who);
+    }
     // Demo: a guest gets a REST API key to connect their own agent (ChatGPT actions, LangChain, ...).
     if (method === 'POST' && route === '/demo/apikey') {
       if (!DEMO) throw new Error('not found: POST /demo/apikey');

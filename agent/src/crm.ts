@@ -23,6 +23,8 @@ const dec = (s?: string): Docs => { if (!s) return {}; try { return JSON.parse(s
 const load = () => { try { if (existsSync(FILE)) db = JSON.parse(readFileSync(FILE, 'utf8')); } catch (e: any) { console.error(`[crm] could not load: ${e.message}`); } };
 const save = () => { mkdirSync(dirname(FILE), { recursive: true }); writeFileSync(FILE + '.tmp', JSON.stringify(db, null, 2), { mode: 0o600 }); renameSync(FILE + '.tmp', FILE); };
 load();
+// Demo nightly reset: replace every client and trip with the clean sample set.
+export function replaceAll(next: { clients: Client[]; trips: Trip[] }) { db = JSON.parse(JSON.stringify({ clients: next.clients ?? [], trips: next.trips ?? [] })); save(); }
 const id = (p: string) => `${p}-${randomBytes(3).toString('hex').toUpperCase()}`;
 const s = (v: any, n = 120) => (v == null ? undefined : String(v).trim().slice(0, n) || undefined);
 const isDate = (v?: string) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v);

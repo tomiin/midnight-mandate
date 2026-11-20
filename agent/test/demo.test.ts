@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clientIpFrom, hostAllowed, DailyCounter, guestPayCheck, onWallet, issueApiKey, apiKeyOf, redact, sanitizeInput, rateOk, fromThisMachine } from '../src/demo.js';
+import { clientIpFrom, hostAllowed, DailyCounter, guestPayCheck, onWallet, issueApiKey, apiKeyOf, redact, sanitizeInput, rateOk, fromThisMachine, msUntilHour } from '../src/demo.js';
 
 describe('demo: client IP', () => {
   it('uses the socket address when no proxy is trusted, even if X-Forwarded-For is sent', () => {
@@ -130,5 +130,15 @@ describe('demo: hardening', () => {
     expect(fromThisMachine(r('127.0.0.1', { 'x-forwarded-for': '1.2.3.4' }))).toBe(false);
     expect(fromThisMachine(r('10.0.0.9'))).toBe(false);
     expect(fromThisMachine(r('127.0.0.1', { 'tailscale-funnel-request': '?1' }))).toBe(false);
+  });
+});
+
+describe('demo: nightly reset schedule', () => {
+  it('waits until 3:00 later today when it is still before 3:00', () => {
+    expect(msUntilHour(3, new Date('2026-11-20T01:30:00'))).toBe(90 * 60_000);
+  });
+  it('waits until 3:00 tomorrow once 3:00 has passed', () => {
+    expect(msUntilHour(3, new Date('2026-11-20T10:00:00'))).toBe(17 * 3600_000);
+    expect(msUntilHour(3, new Date('2026-11-20T03:00:00'))).toBe(24 * 3600_000);
   });
 });

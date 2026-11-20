@@ -163,6 +163,14 @@ function saveRecords() {
     catch (e: any) { console.error(`[records] could not save: ${e.message}`); }
   }, 300);
 }
+// Demo nightly reset: forget every order and the live feed, except the listed records (real on-chain payments).
+export function resetRecords(keepIds: string[]) {
+  const keep = new Set(keepIds);
+  for (const id of [...orders.keys()]) if (!keep.has(id)) orders.delete(id);
+  for (const id of [...remoteOrders.keys()]) if (!keep.has(id)) remoteOrders.delete(id);
+  history.length = 0;
+  saveRecords();
+}
 export const allRecords = () => [...remoteOrders.values()].sort((a, b) => a.createdAt - b.createdAt);
 function broadcast(ev: any) {
   if (ev.type === 'audit') { if (ownsPage) { try { appendAudit({ ...ev.data, at: ev.at }); } catch (e: any) { console.error(`[audit] ${e.message}`); } } return; } // private: never broadcast
