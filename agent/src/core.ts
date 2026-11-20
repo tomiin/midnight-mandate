@@ -23,6 +23,7 @@ const webDir = resolve(dirname(fileURLToPath(import.meta.url)), '../web');
 import { existsSync, readFileSync } from 'fs';
 import { STATE_PATH } from './config.js';
 import { orderRefOf, budgetCheck, payBlockReason } from './rules.js';
+import { redact, rateOk, RATE, clientIp, fromThisMachine } from './demo.js';
 import { DEMO, PUBLIC_HOST, hostAllowed, apiKeyOf, issueApiKey, guestPayCheck, onWallet, walletQueueLength } from './demo.js';
 export { orderRefOf };
 const savedContract = () => { try { return existsSync(STATE_PATH) ? JSON.parse(readFileSync(STATE_PATH, 'utf8')).contract : undefined; } catch { return undefined; } };
@@ -156,7 +157,7 @@ export const ops = {
         return { orderId: o.id, status: 'refused', reason: e.message, advice: 'The agency must raise the limit, start a new period, or reinstate the agent.' };
       }
       log(`Payment error: ${String(e.message ?? e).slice(0, 200)}`, 'bad');
-      return { orderId: o.id, status: 'error', error: String(e.message ?? e).slice(0, 500) };
+      return { orderId: o.id, status: 'error', error: redact(e.message ?? e).slice(0, 500) };
     }
     });
   },
@@ -293,6 +294,8 @@ export function startServices() {
     res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     // Only answer to this machine's own names: blocks DNS-rebinding attacks from malicious web pages.
     const port = process.env.DEMO_PORT ?? '4400';
+    // Demo: requests per IP per minute (whole app), so one visitor can't flood it.
+    if (DEMO && !fromThisMachine(req) && !rateOk(`req:${clientIp(req)}`, RATE.perMinute, 60_000)) { res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '60' }); res.end('{"error":"Too many requests. Wait a minute."}'); return true; }
     // In demo mode the public host name (PUBLIC_HOST) is allowed too.
     if (!hostAllowed(req.headers.host, port)) { res.writeHead(421); res.end('Misdirected request'); return true; }
     // Refuse state-changing requests that come from another website (cross-site request forgery).
@@ -308,21 +311,23 @@ export function startServices() {
     if (url === '/api/verify-order') {
       const u = new URL(req.url ?? '', 'http://x'); const c = String(u.searchParams.get('c') ?? ''); const ref = String(u.searchParams.get('ref') ?? '').toLowerCase();
       const out = (code: number, o: any) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
-      if (!/^[0-9a-f]{64,}$/i.test(c) || !/^[0-9a-f]{64}$/.test(ref)) { out(400, { error: 'Bad contract or order reference' }); return true; }
+      if (!/^[0-9a-f]{64,80}$/i.test(c) || !/^[0-9a-f]{64}$/.test(ref)) { out(400, { error: 'Bad contract or order reference' }); return true; }
+      // Each check calls the Blockfrost indexer, so the public Verify page is limited per IP.
+      if (DEMO && !fromThisMachine(req) && !rateOk(`verify:${clientIp(req)}`, RATE.verifyPerMinute, 60_000)) { out(429, { error: 'Too many checks. Wait a minute.' }); return true; }
       try {
         const view = indexerPublicDataProvider({ queryURL: net.indexerHttpUrl, subscriptionURL: net.indexerWsUrl } as any);
         const cs = await view.queryContractState(c);
         if (!cs) { out(200, { network: NETWORK_NAME, contract: c, found: false }); return true; }
         const l: any = ledgerOf(cs); const key = new Uint8Array(Buffer.from(ref, 'hex'));
         out(200, { network: NETWORK_NAME, contract: c, found: true, paid: l.paidOrders.member(key) ? Number(l.paidOrders.lookup(key)) : null, checkedAt: Date.now() });
-      } catch (e: any) { out(502, { error: `Ledger not reachable: ${String(e.message ?? e).slice(0, 120)}` }); }
+      } catch (e: any) { out(502, { error: `Ledger not reachable: ${redact(e.message ?? e).slice(0, 120)}` }); }
       return true;
     }
     // Machine routes stay open on this machine: other AI clients (REST) and the MCP copies forwarding events.
     // In demo mode only the server itself may post events (not anything coming through the proxy).
     if (url === '/ingest') {
       const local = /^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/.test(String(req.socket.remoteAddress ?? ''));
-      if (DEMO && (!local || req.headers['x-forwarded-for'])) { res.writeHead(403); res.end(); return true; }
+      if (DEMO && (!local || req.headers['x-forwarded-for'] || req.headers['cf-connecting-ip'])) { res.writeHead(403); res.end(); return true; }
       return false;
     }
     // Other AI clients use the REST API on this machine. (The full edition requires owner-issued API keys.)

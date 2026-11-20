@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clientIpFrom, hostAllowed, DailyCounter, guestPayCheck, onWallet, issueApiKey, apiKeyOf } from '../src/demo.js';
+import { clientIpFrom, hostAllowed, DailyCounter, guestPayCheck, onWallet, issueApiKey, apiKeyOf, redact, sanitizeInput, rateOk, fromThisMachine } from '../src/demo.js';
 
 describe('demo: client IP', () => {
   it('uses the socket address when no proxy is trusted, even if X-Forwarded-For is sent', () => {
@@ -10,6 +10,12 @@ describe('demo: client IP', () => {
   });
   it('falls back to the socket address when the proxy sent no header', () => {
     expect(clientIpFrom('172.18.0.2', undefined, true)).toBe('172.18.0.2');
+  });
+  it('with a Cloudflare Tunnel uses CF-Connecting-IP, but only from cloudflared on this machine', () => {
+    expect(clientIpFrom('127.0.0.1', 'forged.1', false, '198.51.100.7', true)).toBe('198.51.100.7');
+    expect(clientIpFrom('::ffff:127.0.0.1', undefined, false, '198.51.100.7', true)).toBe('198.51.100.7');
+    expect(clientIpFrom('10.0.0.9', undefined, false, '198.51.100.7', true)).toBe('10.0.0.9');
+    expect(clientIpFrom('127.0.0.1', undefined, false, undefined, true)).toBe('127.0.0.1');
   });
 });
 
@@ -86,5 +92,42 @@ describe('demo: API keys', () => {
   it('rejects an expired key', () => {
     const { key } = issueApiKey('g_3', 'Guest EF56', -1);
     expect(apiKeyOf(req(`Bearer ${key}`))).toBeNull();
+  });
+});
+
+describe('demo: hardening', () => {
+  it('masks secrets: known values, Blockfrost project ids in URLs, Claude keys', () => {
+    const out = redact('disconnected from wss://rpc.example/?project_id=preprodABC123xyz: 1000 · seed s3cretSEEDvalue99 · key sk-ant-api03-abcdefghijkl', ['s3cretSEEDvalue99']);
+    expect(out).not.toContain('preprodABC123xyz');
+    expect(out).not.toContain('s3cretSEEDvalue99');
+    expect(out).not.toContain('abcdefghijkl');
+    expect(out).toContain('project_id=[redacted]');
+  });
+  it('leaves ordinary text alone', () => {
+    expect(redact('Order NA-N32AZGI paid $236', [])).toBe('Order NA-N32AZGI paid $236');
+  });
+  it('strips angle brackets, long strings, deep nesting and prototype keys from visitor input', () => {
+    const o = sanitizeInput({ name: '<img src=x onerror=alert(1)>Smith', nested: { a: [1, '<b>'] }, long: 'x'.repeat(5000), ['__proto__']: { polluted: true } });
+    expect(o.name).toBe('img src=x onerror=alert(1)Smith');
+    expect(o.nested.a).toEqual([1, 'b']);
+    expect(o.long.length).toBe(2000);
+    expect(({} as any).polluted).toBeUndefined();
+    let deep: any = 'v'; for (let i = 0; i < 20; i++) deep = { d: deep };
+    expect(JSON.stringify(sanitizeInput(deep))).not.toContain('"v"');
+  });
+  it('rate limits per key in a sliding window', () => {
+    const t0 = 1_000_000;
+    expect(rateOk('k', 2, 60_000, t0)).toBe(true);
+    expect(rateOk('k', 2, 60_000, t0 + 1)).toBe(true);
+    expect(rateOk('k', 2, 60_000, t0 + 2)).toBe(false);
+    expect(rateOk('k', 2, 60_000, t0 + 60_001)).toBe(true);
+  });
+  it('treats only direct local requests as this machine (not the tunnel or a proxy)', () => {
+    const r = (addr: string, h: any = {}) => ({ socket: { remoteAddress: addr }, headers: h }) as any;
+    expect(fromThisMachine(r('127.0.0.1'))).toBe(true);
+    expect(fromThisMachine(r('::1'))).toBe(true);
+    expect(fromThisMachine(r('127.0.0.1', { 'cf-connecting-ip': '198.51.100.7' }))).toBe(false);
+    expect(fromThisMachine(r('127.0.0.1', { 'x-forwarded-for': '1.2.3.4' }))).toBe(false);
+    expect(fromThisMachine(r('10.0.0.9'))).toBe(false);
   });
 });

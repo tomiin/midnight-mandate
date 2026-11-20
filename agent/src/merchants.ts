@@ -6,6 +6,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from '
 import { renderInvoice } from './invoices.js';
 import { appendAudit } from './audit.js';
 import { getTrip } from './crm.js';
+import { DEMO, redact, sanitizeInput, MAX_BODY } from './demo.js';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 
@@ -165,6 +166,7 @@ function saveRecords() {
 export const allRecords = () => [...remoteOrders.values()].sort((a, b) => a.createdAt - b.createdAt);
 function broadcast(ev: any) {
   if (ev.type === 'audit') { if (ownsPage) { try { appendAudit({ ...ev.data, at: ev.at }); } catch (e: any) { console.error(`[audit] ${e.message}`); } } return; } // private: never broadcast
+  if (ev.type === 'log' && ev.data?.text) ev = { ...ev, data: { ...ev.data, text: redact(ev.data.text) } }; // never show secrets in the feed
   history.push(ev); if (history.length > 300) history.shift();
   if (ev.type === 'order') { remoteOrders.set(ev.data.id, { ...(remoteOrders.get(ev.data.id) ?? {}), ...ev.data }); if (ownsPage) saveRecords(); }
   for (const c of clients) c.write(`data: ${JSON.stringify(ev)}\n\n`);
@@ -182,25 +184,30 @@ export type Raw = (req: IncomingMessage, res: ServerResponse) => Promise<boolean
 export function startHub(port = PORT, extra?: () => any, api?: Api, raw?: Raw) {
   const page = () => readFileSync(resolve(here, '../web/index.html'), 'utf8');
   const server = createServer(async (req, res) => {
-    try { if (raw && await raw(req, res)) return; } catch (e: any) { res.writeHead(500); res.end(String(e.message ?? e)); return; }
+    try { if (raw && await raw(req, res)) return; } catch (e: any) { res.writeHead(500); res.end(redact(e.message ?? e)); return; }
     if (req.url === '/events') {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
       for (const ev of history) res.write(`data: ${JSON.stringify(ev)}\n\n`);
       clients.add(res); req.on('close', () => clients.delete(res)); return;
     }
     if (req.url?.startsWith('/api/') && api) {
-      let body = ''; req.on('data', (c) => (body += c));
+      // Bodies are capped (a few KB is all the app sends); in demo mode visitor input is sanitized.
+      let body = ''; let tooBig = false;
+      req.on('data', (c) => { if (tooBig) return; body += c; if (body.length > MAX_BODY) { tooBig = true; res.writeHead(413, { 'Content-Type': 'application/json' }); res.end('{"error":"Request too large"}'); req.destroy(); } });
       req.on('end', async () => {
+        if (tooBig) return;
         try {
-          const out = await api(req.method ?? 'GET', req.url!.slice(4), body ? JSON.parse(body) : {}, req);
+          let parsed = body ? JSON.parse(body) : {};
+          if (DEMO) parsed = sanitizeInput(parsed);
+          const out = await api(req.method ?? 'GET', req.url!.slice(4), parsed, req);
           res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(out ?? {}));
-        } catch (e: any) { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(e.message ?? e) })); }
+        } catch (e: any) { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: redact(e.message ?? e) })); }
       });
       return;
     }
     if (req.url === '/ingest' && req.method === 'POST') {
-      let body = ''; req.on('data', (c) => (body += c));
-      req.on('end', () => { try { broadcast(JSON.parse(body)); } catch {} res.writeHead(204); res.end(); });
+      let body = ''; req.on('data', (c) => { if (body.length <= MAX_BODY) body += c; });
+      req.on('end', () => { try { if (body.length <= MAX_BODY) broadcast(JSON.parse(body)); } catch {} res.writeHead(204); res.end(); });
       return;
     }
     if (req.url === '/state') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ orders: allRecords(), ...(extra?.() ?? {}) })); return; }

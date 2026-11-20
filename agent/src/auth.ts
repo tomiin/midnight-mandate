@@ -9,7 +9,7 @@ import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { emit } from './merchants.js';
 import { readAudit } from './audit.js';
-import { DEMO, LIMITS, clientIp, counters } from './demo.js';
+import { DEMO, LIMITS, clientIp, counters, fromThisMachine } from './demo.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const FILE = resolve(here, `../data/users-${process.env.MN_NETWORK ?? 'undeployed'}.json`);
@@ -63,6 +63,11 @@ export async function authRoutes(req: IncomingMessage, res: ServerResponse, logi
     const g = { id: 'g_' + randomBytes(5).toString('hex'), name: `Guest ${tag}`, username: `guest-${tag.toLowerCase()}`, role: 'guest' as const, pw: '', active: true, createdAt: Date.now(), lastLogin: Date.now(), exp: Date.now() + ttl };
     guests.set(g.id, g); startSession(res, g, ttl); audit(label(g), 'demo session started', undefined, ip);
     return json(res, 200, { user: pub(g) }), true;
+  }
+  // Demo: the owner account can only be used (or created) on the host machine itself, never through the tunnel.
+  if (DEMO && (url === '/api/auth/setup' || url === '/api/auth/login') && m === 'POST' && !fromThisMachine(req)) {
+    audit('unknown', 'owner sign-in refused', 'demo mode: owner sign-in only on the host machine', ip);
+    return json(res, 403, { error: 'Owner sign-in is turned off on the public demo. Use "Try the demo".' }), true;
   }
   if (url === '/api/auth/setup' && m === 'POST') {
     if (users.length) return json(res, 403, { error: 'Setup is already done. Sign in instead.' }), true;

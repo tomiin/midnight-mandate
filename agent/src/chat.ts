@@ -15,7 +15,7 @@ import { Proxy, newClientIntent } from './privacy.js';
 import { appendFileSync, mkdirSync, writeFileSync, renameSync } from 'fs';
 import { createHash } from 'crypto';
 import { emit } from './merchants.js';
-import { DEMO, LIMITS, clientIp, counters } from './demo.js';
+import { DEMO, LIMITS, clientIp, counters, redact, MAX_BODY } from './demo.js';
 
 const ENV_FILE = resolve(dirname(fileURLToPath(import.meta.url)), '../.env');
 // Read on every request so adding the key to .env works without a restart.
@@ -152,7 +152,7 @@ export function chatStatus(uid?: string) { return { ready: !!apiKey(), model: mo
 
 export async function handleChat(req: IncomingMessage, res: ServerResponse, user?: { id?: string; name: string; role: string }) {
   const actor = user ? `${user.name} (${user.role === 'owner' ? 'owner' : user.role === 'guest' ? 'demo guest' : 'staff'}) via Assistant` : 'Assistant';
-  let raw = ''; for await (const c of req) raw += c;
+  let raw = ''; for await (const c of req) { raw += c; if (raw.length > MAX_BODY) { res.writeHead(413); return res.end(); } }
   let body: any = {}; try { body = JSON.parse(raw || '{}'); } catch {}
   res.writeHead(200, { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-cache' });
   const who = user ? { id: (user as any).id ?? user.name, name: user.name, role: user.role } : { id: 'anon', name: 'Unknown', role: 'agent' };
@@ -205,7 +205,7 @@ export async function handleChat(req: IncomingMessage, res: ServerResponse, user
       const j: any = await r.json().catch(() => ({}));
       if (!r.ok) {
         msgs.pop(); // drop the turn so the conversation stays valid
-        const m = j?.error?.message ?? `HTTP ${r.status}`;
+        const m = redact(j?.error?.message ?? `HTTP ${r.status}`);
         send({ type: 'error', text: r.status === 401 ? (own ? 'Claude rejected your key. Check it under **Key**, or remove it to use the agency\'s assistant.' : 'Claude rejected the API key. Check ANTHROPIC_API_KEY in agent/.env.') : /credit|billing/i.test(m) ? `Claude API: ${m} (add credits on the Claude platform).` : `Claude API: ${m}` });
         return end();
       }
@@ -220,7 +220,7 @@ export async function handleChat(req: IncomingMessage, res: ServerResponse, user
         let out: any;
         try {
           out = await runTool(c.name, realInput, actor, text, user?.role === 'guest' ? who.id : undefined);
-        } catch (e: any) { out = { error: String(e.message ?? e).slice(0, 400) }; }
+        } catch (e: any) { out = { error: redact(e.message ?? e).slice(0, 400) }; }
         const ok = !out?.error && out?.status !== 'refused';
         send({ type: 'tool', name: c.name, state: ok ? 'ok' : 'bad', summary: summarize(c.name, out), data: c.name === 'search_travel' ? out?.results : undefined });
         results.push({ type: 'tool_result', tool_use_id: c.id, content: wrapToolResult(c.name, P.maskDeep(out)), is_error: !!out?.error });
@@ -228,7 +228,7 @@ export async function handleChat(req: IncomingMessage, res: ServerResponse, user
       msgs.push({ role: 'user', content: results });
     }
   } catch (e: any) {
-    send({ type: 'error', text: `Could not reach Claude: ${String(e.message ?? e).slice(0, 200)}` });
+    send({ type: 'error', text: `Could not reach Claude: ${redact(e.message ?? e).slice(0, 200)}` });
   }
   send({ type: 'done' }); end();
 }
